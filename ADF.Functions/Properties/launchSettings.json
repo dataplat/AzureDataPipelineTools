@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ADF.Functions": {
+      "commandName": "Project",
+      "workingDirectory": "bin/Debug"
+    }
+  }
+}
