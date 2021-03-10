@@ -15,6 +15,7 @@ using Flurl;
 using System.Linq;
 using System.Reflection;
 using System.Linq.Dynamic.Core;
+using Azure.Storage.Files.DataLake.Models;
 
 namespace Azure.Datafactory.Extensions.Functions
 {
@@ -34,10 +35,7 @@ namespace Azure.Datafactory.Extensions.Functions
                 if (string.IsNullOrWhiteSpace(settings.AccountUri))
                     throw new ArgumentException($"Account Uri '{settings.AccountUri}' not found. Check the URI is correct.");
 
-                var client = GetDataLakeClient(settings, log);
-                if (client == null || !client.Exists())
-                    throw new ArgumentException($"Container '{settings.Container}' not found in storage account '{settings.AccountUri}'. Check the names are correct, and that access is granted to the functions application service principal.");
-
+                var client = DataLakeClientFactory.GetDataLakeClient(settings, log);
                 return await GetItemsAsync(client, settings, log);
             }
             catch (ArgumentException ex)
@@ -68,9 +66,7 @@ namespace Azure.Datafactory.Extensions.Functions
                 if (string.IsNullOrWhiteSpace(settings.AccountUri))
                     throw new ArgumentException($"Account Uri '{settings.AccountUri}' not found. Check the URI is correct.");
 
-                var client = GetDataLakeClient(settings, log);
-                if (client == null || ! await client.ExistsAsync())
-                    throw new ArgumentException($"Container '{settings.Container}' not found in storage account '{settings.AccountUri}'. Check the names are correct, and that access is granted to the functions application service principal.");
+                var client = DataLakeClientFactory.GetDataLakeClient(settings, log);
 
                 var paramsJsonFragment = GetParamsJsonFragment(settings);
                 var validatedPath = await CheckPathAsync(client, settings.Path, true, log);
@@ -108,20 +104,20 @@ namespace Azure.Datafactory.Extensions.Functions
         }
 
 
-        private static DataLakeFileSystemClient GetDataLakeClient(DataLakeConfig settings, ILogger log)
-        {
-            // This works as long as the account accessing (managed identity or visual studio user) has both of the following IAM permissions on the storage account:
-            // - Reader
-            // - Storage Blob Data Reader
-            var credential = new DefaultAzureCredential();
-            log.LogInformation($"Using credential Type: {credential.GetType().Name}");
+        //private static DataLakeFileSystemClient GetDataLakeClient(DataLakeConfig settings, ILogger log)
+        //{
+        //    // This works as long as the account accessing (managed identity or visual studio user) has both of the following IAM permissions on the storage account:
+        //    // - Reader
+        //    // - Storage Blob Data Reader
+        //    var credential = new DefaultAzureCredential();
+        //    log.LogInformation($"Using credential Type: {credential.GetType().Name}");
 
-            var client = new DataLakeFileSystemClient(new Uri(settings.BaseUrl), credential);
-            if (!client.Exists())
-                return null;
+        //    var client = new DataLakeFileSystemClient(new Uri(settings.BaseUrl), credential);
+        //    if (!client.Exists())
+        //        return null;
 
-            return client;
-        }
+        //    return client;
+        //}
 
         
         private async static Task<string> CheckPathAsync(DataLakeFileSystemClient client, string path, bool isDirectory, ILogger log)
