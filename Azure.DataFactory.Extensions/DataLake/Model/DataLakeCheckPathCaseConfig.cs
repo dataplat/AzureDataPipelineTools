@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 
-namespace Azure.Datafactory.Extensions.Functions
+namespace Azure.Datafactory.Extensions.DataLake.Model
 {
     public class DataLakeCheckPathCaseConfig : DataLakeConfig
     {

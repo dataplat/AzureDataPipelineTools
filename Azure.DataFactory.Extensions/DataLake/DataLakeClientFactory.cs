@@ -1,9 +1,8 @@
-﻿using Azure.Identity;
+﻿using Azure.Datafactory.Extensions.DataLake.Model;
+using Azure.Identity;
 using Azure.Storage.Files.DataLake;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Azure.Datafactory.Extensions.Functions
 {

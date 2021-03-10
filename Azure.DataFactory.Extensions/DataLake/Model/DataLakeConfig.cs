@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.WebJobs.Extensions.Http;
+//using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
 using System.IO;
 
-namespace Azure.Datafactory.Extensions.Functions
+namespace Azure.Datafactory.Extensions.DataLake.Model
 {
     public class DataLakeConfig
     {
@@ -23,7 +23,7 @@ namespace Azure.Datafactory.Extensions.Functions
         protected DataLakeConfig(HttpRequest req, ILogger logger)
         {
             Logger = logger;
-            Logger?.LogInformation($"req.GetQueryParameterDictionary(): {JsonConvert.SerializeObject(req.GetQueryParameterDictionary(), Formatting.Indented)}");
+            //Logger?.LogInformation($"req.GetQueryParameterDictionary(): {JsonConvert.SerializeObject(req.GetQueryParameterDictionary(), Formatting.Indented)}");
 
             Data = GetRequestData(req);
 
@@ -39,7 +39,7 @@ namespace Azure.Datafactory.Extensions.Functions
         private static dynamic GetRequestData(HttpRequest req)
         {
             var task = new StreamReader(req.Body).ReadToEndAsync();
-            task.Wait(250);
+            //task.Wait(250);
             return JsonConvert.DeserializeObject(task.Result);
         }
     }

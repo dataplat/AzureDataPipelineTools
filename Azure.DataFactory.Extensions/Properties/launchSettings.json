@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Azure.DataFactory.Extensions": {
+      "commandName": "Project",
+      "workingDirectory": "bin/Debug"
+    }
+  }
+}

@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Azure.Datafactory.Extensions.Functions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Azure.Datafactory.Extensions.Functions
+namespace Azure.Datafactory.Extensions.DataLake.Model
 {
 
     public class DataLakeGetItemsConfig : DataLakeConfig
@@ -15,7 +16,7 @@ namespace Azure.Datafactory.Extensions.Functions
         public string OrderByColumn { get; set; }
         public bool OrderByDescending { get; set; }
         public int Limit { get; set; }
-        public IEnumerable<Filter> Filters { get; set; }
+        public IEnumerable<Filter<DataLakeFile>> Filters { get; set; }
 
         private const string DirectoryParam = "directory";
         private const string IgnoreDirectoryCaseParam = "ignoreDirectoryCase";
@@ -47,11 +48,11 @@ namespace Azure.Datafactory.Extensions.Functions
             Filters = ParseFilters(req);
         }
 
-        private IEnumerable<Filter> ParseFilters(HttpRequest req)
+        private IEnumerable<Filter<DataLakeFile>> ParseFilters(HttpRequest req)
         {
             var filters = req.Query.Keys
                             .Where(k => k.StartsWith("filter[") && k.EndsWith("]"))
-                            .SelectMany(k => req.Query[k].Select(v => Filter.ParseFilter(k, v, Logger)))
+                            .SelectMany(k => req.Query[k].Select(v => Filter<DataLakeFile>.ParseFilter(k, v, Logger)))
                             .Where(f => f != null);
 
             return filters;

@@ -11,7 +11,7 @@ namespace Azure.Datafactory.Extensions.Functions
             return GetAssemblyVersionInfoJson(callingAssembly);
         }
 
-            public static string GetAssemblyVersionInfoJson(System.Reflection.Assembly assembly)
+        public static string GetAssemblyVersionInfoJson(Assembly assembly)
         {
             string buildDate = assembly.GetCustomAttributes().OfType<AssemblyMetadataAttribute>().FirstOrDefault(a => a.Key == "BuildDate")?.Value;
             string informationalVersion = assembly.GetCustomAttributes().OfType<AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion;

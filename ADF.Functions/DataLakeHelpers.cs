@@ -16,6 +16,8 @@ using System.Linq;
 using System.Reflection;
 using System.Linq.Dynamic.Core;
 using Azure.Storage.Files.DataLake.Models;
+using Azure.Datafactory.Extensions.DataLake;
+using Azure.Datafactory.Extensions.DataLake.Model;
 
 namespace Azure.Datafactory.Extensions.Functions
 {
@@ -26,6 +28,8 @@ namespace Azure.Datafactory.Extensions.Functions
             [HttpTrigger(AuthorizationLevel.Function, "get" /*, "post"*/, Route = null)] HttpRequest req,
             ILogger log)
         {
+            req.GetQueryParameterDictionary();
+
             var userAgentKey = req.Headers.Keys.FirstOrDefault(k => k.ToLower() == "user-agent" || k.ToLower() == "useragent");
             log.LogInformation($"C# HTTP trigger function processed a request [User Agent: { (userAgentKey == null ? "Unknown" : req.Headers[userAgentKey].ToString()) }].");
 

@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace Azure.Datafactory.Extensions.Functions
 {
-    public class Filter
+    public class Filter<T>
     {
         public string PropertyName { get; set; }
         public string Operator { get; set; }
@@ -19,10 +19,10 @@ namespace Azure.Datafactory.Extensions.Functions
 
 
 
-        private static IEnumerable<PropertyInfo> DataLakeFileProperties { get; } = typeof(DataLakeFile).GetProperties();
-        private static String FilterableProperties { get; } = string.Join(", ", typeof(DataLakeFile).GetProperties().Select(p => p.Name).OrderBy(p => p));
+        private static IEnumerable<PropertyInfo> DataLakeFileProperties { get; } = typeof(T).GetProperties();
+        private static String FilterableProperties { get; } = string.Join(", ", typeof(T).GetProperties().Select(p => p.Name).OrderBy(p => p));
 
-        public static Filter ParseFilter(string columnName, string filter, ILogger log)
+        public static Filter<T> ParseFilter(string columnName, string filter, ILogger log)
         {
             // Clean up the column name by removing the filter[...] parts
             var columnNameClean = columnName[7..^1];
@@ -35,7 +35,7 @@ namespace Azure.Datafactory.Extensions.Functions
             {
                 var error = $"The filter column '{columnNameClean}' does not exist. Filter columns must be one of the following: {FilterableProperties}.";
                 log?.LogWarning(error);
-                return new Filter
+                return new Filter<T>
                 {
                     PropertyName = columnNameClean,
                     ErrorMessage = error
@@ -49,7 +49,7 @@ namespace Azure.Datafactory.Extensions.Functions
             {
                 var error = $"The filter string '{filter}' for column '{columnNameClean}' is not valid. It should match the format '{operatorRegex}'";
                 log?.LogWarning(error);
-                return new Filter
+                return new Filter<T>
                 {
                     PropertyName = columnNameClean,
                     ErrorMessage = error
@@ -92,7 +92,7 @@ namespace Azure.Datafactory.Extensions.Functions
             if (!isValueParseable)
                 log?.LogWarning(parseError);
 
-            return new Filter
+            return new Filter<T>
             {
                 PropertyName = columnNameClean,
                 Operator = op,

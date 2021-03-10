@@ -1,4 +1,4 @@
-﻿namespace Azure.Datafactory.Extensions.Functions
+﻿namespace Azure.Datafactory.Extensions.DataLake.Model
 {
     public struct DataLakeFile
     {

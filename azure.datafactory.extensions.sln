@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30225.117
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADF.Functions", "ADF.Functions\ADF.Functions.csproj", "{12DD4B77-8B6C-4F4F-B0D2-58E60D2735BF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ADF.Functions", "ADF.Functions\ADF.Functions.csproj", "{12DD4B77-8B6C-4F4F-B0D2-58E60D2735BF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azure.DataFactory.Extensions", "Azure.DataFactory.Extensions\Azure.DataFactory.Extensions.csproj", "{84B7E7A9-BDE5-4602-B99C-853CC1159CE5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{12DD4B77-8B6C-4F4F-B0D2-58E60D2735BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{12DD4B77-8B6C-4F4F-B0D2-58E60D2735BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{12DD4B77-8B6C-4F4F-B0D2-58E60D2735BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{84B7E7A9-BDE5-4602-B99C-853CC1159CE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84B7E7A9-BDE5-4602-B99C-853CC1159CE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84B7E7A9-BDE5-4602-B99C-853CC1159CE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84B7E7A9-BDE5-4602-B99C-853CC1159CE5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
