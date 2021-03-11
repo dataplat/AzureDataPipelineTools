@@ -21,35 +21,47 @@ using Azure.Datafactory.Extensions.DataLake.Model;
 
 namespace Azure.Datafactory.Extensions.Functions
 {
-    public static partial class DataLakeHelpers
+    public partial class DataLakeFunctions
     {
+        private readonly ILogger<DataLakeFunctions> _logger;
+        private readonly DataLakeConfigFactory _configFactory;
+        public DataLakeFunctions(ILogger<DataLakeFunctions> logger, DataLakeConfigFactory configFactory)
+        {
+            _logger = logger;
+            _configFactory = configFactory;
+        }
+
+
+
         [FunctionName("DataLakeGetItems")]
-        public static async Task<IActionResult> DataLakeGetItems(
-            [HttpTrigger(AuthorizationLevel.Function, "get" /*, "post"*/, Route = null)] HttpRequest req,
-            ILogger log)
+        public async Task<IActionResult> DataLakeGetItems(
+            [HttpTrigger(AuthorizationLevel.Function, "get" /*, "post"*/, Route = null)] HttpRequest req)
         {
             req.GetQueryParameterDictionary();
 
             var userAgentKey = req.Headers.Keys.FirstOrDefault(k => k.ToLower() == "user-agent" || k.ToLower() == "useragent");
-            log.LogInformation($"C# HTTP trigger function processed a request [User Agent: { (userAgentKey == null ? "Unknown" : req.Headers[userAgentKey].ToString()) }].");
+            _logger.LogInformation($"C# HTTP trigger function processed a request [User Agent: { (userAgentKey == null ? "Unknown" : req.Headers[userAgentKey].ToString()) }].");
 
             try
             {
-                var settings = DataLakeGetItemsConfig.ParseFromRequestBody(req, log);
-                if (string.IsNullOrWhiteSpace(settings.AccountUri))
-                    throw new ArgumentException($"Account Uri '{settings.AccountUri}' not found. Check the URI is correct.");
+                var dataLakeConfig = _configFactory.GetDataLakeConfig(req);
+                var getItemsConfig = _configFactory.GetItemsConfig(req);
 
-                var client = DataLakeClientFactory.GetDataLakeClient(settings, log);
-                return await GetItemsAsync(client, settings, log);
+                if (string.IsNullOrWhiteSpace(dataLakeConfig.AccountUri))
+                    throw new ArgumentException($"Account Uri '{dataLakeConfig.AccountUri}' not found. Check the URI is correct.");
+
+                var clientFactory = new DataLakeClientFactory(_logger);
+                var client = clientFactory.GetDataLakeClient(dataLakeConfig);
+                return await GetItemsAsync(client, dataLakeConfig, getItemsConfig, _logger);
             }
             catch (ArgumentException ex)
             {
-                log.LogError(ex.Message);
+                _logger.LogError(ex.Message);
                 return new BadRequestObjectResult(ex.Message);
             }
             catch (Exception ex)
             {
-                log.LogError(ex.ToString());
+                _logger.LogError(ex.ToString());
                 return new BadRequestObjectResult("An error occurred, see the Azure Function logs for more details");
             }
         }
@@ -57,74 +69,82 @@ namespace Azure.Datafactory.Extensions.Functions
 
 
         [FunctionName("DataLakeCheckPathCase")]
-        public static async Task<IActionResult> DataLakeCheckPathCase(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req,
-            ILogger log)
+        public async Task<IActionResult> DataLakeCheckPathCase(
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req)
         {
             var userAgentKey = req.Headers.Keys.FirstOrDefault(k => k.ToLower() == "user-agent" || k.ToLower() == "useragent");
-            log.LogInformation($"C# HTTP trigger function processed a request [User Agent: { (userAgentKey == null ? "Unknown" : req.Headers[userAgentKey].ToString()) }].");
+            _logger.LogInformation($"C# HTTP trigger function processed a request [User Agent: { (userAgentKey == null ? "Unknown" : req.Headers[userAgentKey].ToString()) }].");
 
             try
             {
-                var settings = DataLakeCheckPathCaseConfig.ParseFromRequestBody(req, log);
-                if (string.IsNullOrWhiteSpace(settings.AccountUri))
-                    throw new ArgumentException($"Account Uri '{settings.AccountUri}' not found. Check the URI is correct.");
+                var dataLakeConfig = _configFactory.GetDataLakeConfig(req);
+                var getItemsConfig = _configFactory.GetCheckPathCaseConfig(req);
 
-                var client = DataLakeClientFactory.GetDataLakeClient(settings, log);
+                if (string.IsNullOrWhiteSpace(dataLakeConfig.AccountUri))
+                    throw new ArgumentException($"Account Uri '{dataLakeConfig.AccountUri}' not found. Check the URI is correct.");
 
-                var paramsJsonFragment = GetParamsJsonFragment(settings);
-                var validatedPath = await CheckPathAsync(client, settings.Path, true, log);
+                var clientFactory = new DataLakeClientFactory(_logger);
+                var client = clientFactory.GetDataLakeClient(dataLakeConfig);
+
+                var paramsJsonFragment = GetParamsJsonFragment(dataLakeConfig, getItemsConfig);
+                var validatedPath = await CheckPathAsync(client, getItemsConfig.Path, true, _logger);
 
                 // If multiple files match, the function will throw and the catch block will return a BadRequestObjectResult
                 // If the path could not be found as a directory, try for a file...
-                validatedPath = validatedPath ?? await CheckPathAsync(client, settings.Path, false, log);
+                validatedPath = validatedPath ?? await CheckPathAsync(client, getItemsConfig.Path, false, _logger);
 
                 var resultJson = "{" +
                                    $"{paramsJsonFragment}, \"validatedPath\":\"{validatedPath}\" " +
                                  "}";
 
                 return validatedPath != null ?
-                    (IActionResult) new OkObjectResult(JObject.Parse(resultJson)) :
-                    (IActionResult) new NotFoundObjectResult(JObject.Parse(resultJson));
+                    (IActionResult)new OkObjectResult(JObject.Parse(resultJson)) :
+                    (IActionResult)new NotFoundObjectResult(JObject.Parse(resultJson));
             }
             catch (ArgumentException ex)
             {
-                log.LogError(ex.Message);
+                _logger.LogError(ex.Message);
                 return new BadRequestObjectResult(ex.Message);
             }
             catch (Exception ex)
             {
-                log.LogError(ex.ToString());
+                _logger.LogError(ex.ToString());
                 return new BadRequestObjectResult("An error occurred, see the Azure Function logs for more details");
             }
         }
 
 
 
-        private static string GetParamsJsonFragment(DataLakeConfig settings)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        private string GetParamsJsonFragment(DataLakeConfig dataLakeConfig, object parameters)
         {
             return $"\"debugInfo\": {AssemblyHelpers.GetAssemblyVersionInfoJson()}," +
-                   $"\"parameters\": {JsonConvert.SerializeObject(settings, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore })}";
+                   $"\"storageContainerUrl\": {dataLakeConfig.BaseUrl}," +
+                   parameters == null ? 
+                        string.Empty :
+                        $"\"parameters\": {JsonConvert.SerializeObject(parameters, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore })}";
         }
 
-
-        //private static DataLakeFileSystemClient GetDataLakeClient(DataLakeConfig settings, ILogger log)
-        //{
-        //    // This works as long as the account accessing (managed identity or visual studio user) has both of the following IAM permissions on the storage account:
-        //    // - Reader
-        //    // - Storage Blob Data Reader
-        //    var credential = new DefaultAzureCredential();
-        //    log.LogInformation($"Using credential Type: {credential.GetType().Name}");
-
-        //    var client = new DataLakeFileSystemClient(new Uri(settings.BaseUrl), credential);
-        //    if (!client.Exists())
-        //        return null;
-
-        //    return client;
-        //}
-
         
-        private async static Task<string> CheckPathAsync(DataLakeFileSystemClient client, string path, bool isDirectory, ILogger log)
+        private async Task<string> CheckPathAsync(DataLakeFileSystemClient client, string path, bool isDirectory, ILogger log)
         {
             if (path == null || path.Trim() == "/")
                 return null;
@@ -175,7 +195,7 @@ namespace Azure.Datafactory.Extensions.Functions
             return files.FirstOrDefault();
         }
 
-        private static IList<string> MatchPathItemsCaseInsensitive(DataLakeFileSystemClient client, string basePath, string searchItem, bool isDirectory, ILogger log)
+        private IList<string> MatchPathItemsCaseInsensitive(DataLakeFileSystemClient client, string basePath, string searchItem, bool isDirectory, ILogger log)
         {
             var paths = client.GetPaths(basePath).ToList();
             return paths.Where(p => p.IsDirectory == isDirectory && Path.GetFileName(p.Name).Equals(searchItem, StringComparison.CurrentCultureIgnoreCase))
@@ -185,19 +205,19 @@ namespace Azure.Datafactory.Extensions.Functions
         }
 
 
-        private static async Task<IActionResult> GetItemsAsync(DataLakeFileSystemClient client, DataLakeGetItemsConfig settings, ILogger log)
+        private async Task<IActionResult> GetItemsAsync(DataLakeFileSystemClient client, DataLakeConfig dataLakeConfig, DataLakeGetItemsConfig getItemsConfig, ILogger log)
         {
-            var directory = settings.IgnoreDirectoryCase ?
-                                await CheckPathAsync(client, settings.Directory, true, log) :
-                                settings.Directory;
+            var directory = getItemsConfig.IgnoreDirectoryCase ?
+                                await CheckPathAsync(client, getItemsConfig.Directory, true, log) :
+                                getItemsConfig.Directory;
 
-            var paramsJsonFragment = GetParamsJsonFragment(settings);
+            var paramsJsonFragment = GetParamsJsonFragment(dataLakeConfig, getItemsConfig);
 
             if (!client.GetDirectoryClient(directory).Exists())
                 return new BadRequestObjectResult(JObject.Parse($"{{ {paramsJsonFragment}, \"error\": \"Directory '{directory} could not be found'\" }}"));
 
             var paths = client
-                .GetPaths(path: directory ?? string.Empty, recursive: settings.Recursive)
+                .GetPaths(path: directory ?? string.Empty, recursive: getItemsConfig.Recursive)
                 .Select(p => new DataLakeFile
                 {
                     Name = Path.GetFileName(p.Name),
@@ -205,7 +225,7 @@ namespace Azure.Datafactory.Extensions.Functions
                                 p.Name :
                                 Path.GetDirectoryName(p.Name).Replace(Path.DirectorySeparatorChar, '/'),
                     FullPath = p.Name,
-                    Url = Url.Combine(settings.BaseUrl, p.Name),
+                    Url = Url.Combine(dataLakeConfig.BaseUrl, p.Name),
                     IsDirectory = p.IsDirectory.GetValueOrDefault(false),
                     ContentLength = p.ContentLength.GetValueOrDefault(0),
                     LastModified = p.LastModified.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
@@ -213,7 +233,7 @@ namespace Azure.Datafactory.Extensions.Functions
                 .ToList();
 
             // 1: Filter the results using dynamic LINQ
-            foreach (var filter in settings.Filters.Where(f => f.IsValid))
+            foreach (var filter in getItemsConfig.Filters.Where(f => f.IsValid))
             {
                 var dynamicLinqQuery = filter.GetDynamicLinqString();
                 string dynamicLinqQueryValue = filter.GetDynamicLinqValue();
@@ -222,29 +242,29 @@ namespace Azure.Datafactory.Extensions.Functions
             }
 
             // 2: Sort the results
-            if (!string.IsNullOrWhiteSpace(settings.OrderByColumn))
+            if (!string.IsNullOrWhiteSpace(getItemsConfig.OrderByColumn))
             {
                 paths = paths.AsQueryable()
-                             .OrderBy(settings.OrderByColumn + (settings.OrderByDescending ? " descending" : string.Empty))
+                             .OrderBy(getItemsConfig.OrderByColumn + (getItemsConfig.OrderByDescending ? " descending" : string.Empty))
                              .ToList();
             }
 
             // 3: Do a top N if required
-            if (settings.Limit > 0 && settings.Limit < paths.Count)
-                paths = paths.Take(settings.Limit).ToList();
+            if (getItemsConfig.Limit > 0 && getItemsConfig.Limit < paths.Count)
+                paths = paths.Take(getItemsConfig.Limit).ToList();
 
 
 
             // Output the results
             var versionAttribute = Attribute.GetCustomAttribute(Assembly.GetExecutingAssembly(), typeof(AssemblyInformationalVersionAttribute)) as AssemblyInformationalVersionAttribute;
 
-            var IsEveryFilterValid = settings.Filters.All(f => f.IsValid);
+            var IsEveryFilterValid = getItemsConfig.Filters.All(f => f.IsValid);
             var filesListJson = IsEveryFilterValid ?
                                      $"\"fileCount\": {paths.Count}," +
                                      $"\"files\": {JsonConvert.SerializeObject(paths, Formatting.Indented)}" :
                                      string.Empty;
 
-            var resultJson = $"{{ {paramsJsonFragment}, {(settings.IgnoreDirectoryCase && directory != settings.Directory ? $"\"correctedFilePath\": \"{directory}\"," : string.Empty)} {filesListJson} }}";
+            var resultJson = $"{{ {paramsJsonFragment}, {(getItemsConfig.IgnoreDirectoryCase && directory != getItemsConfig.Directory ? $"\"correctedFilePath\": \"{directory}\"," : string.Empty)} {filesListJson} }}";
 
             return IsEveryFilterValid ?
                 (IActionResult)new OkObjectResult(JObject.Parse(resultJson)) :

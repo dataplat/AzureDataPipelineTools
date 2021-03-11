@@ -6,21 +6,26 @@ using System;
 
 namespace Azure.Datafactory.Extensions.Functions
 {
-    public static class DataLakeClientFactory
+    public class DataLakeClientFactory
     {
+        private readonly ILogger _logger;
+        public DataLakeClientFactory(ILogger logger)
+        {
+            _logger = logger;
+        }
 
-        public static DataLakeFileSystemClient GetDataLakeClient(DataLakeConfig settings, ILogger log)
+        public DataLakeFileSystemClient GetDataLakeClient(DataLakeConfig dataLakeConfig)
         {
             // This works as long as the account accessing (managed identity or visual studio user) has both of the following IAM permissions on the storage account:
             // - Reader
             // - Storage Blob Data Reader
             var credential = new DefaultAzureCredential();
-            log.LogInformation($"Using credential Type: {credential.GetType().Name}");
+            _logger.LogInformation($"Using credential Type: {credential.GetType().Name}");
 
-            var client = new DataLakeFileSystemClient(new Uri(settings.BaseUrl), credential);
+            var client = new DataLakeFileSystemClient(new Uri(dataLakeConfig.BaseUrl), credential);
             
             if (client == null || !client.Exists())
-                throw new ArgumentException($"Container '{settings.Container}' not found in storage account '{settings.AccountUri}'. Check the names are correct, and that access is granted to the functions application service principal.");
+                throw new ArgumentException($"Container '{dataLakeConfig.Container}' not found in storage account '{dataLakeConfig.AccountUri}'. Check the names are correct, and that access is granted to the functions application service principal.");
 
             return client;
         }
