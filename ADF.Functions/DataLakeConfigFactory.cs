@@ -24,7 +24,7 @@ namespace Azure.Datafactory.Extensions.Functions
         private const string LimitParam = "limit";
 
         private readonly ILogger _logger;
-        public DataLakeConfigFactory(ILogger logger)
+        public DataLakeConfigFactory(ILogger<DataLakeConfigFactory> logger)
         {
             _logger = logger;
         }

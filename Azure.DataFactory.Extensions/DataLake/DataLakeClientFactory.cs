@@ -4,12 +4,12 @@ using Azure.Storage.Files.DataLake;
 using Microsoft.Extensions.Logging;
 using System;
 
-namespace Azure.Datafactory.Extensions.Functions
+namespace Azure.Datafactory.Extensions.DataLake
 {
-    public class DataLakeClientFactory
+    public class DataLakeClientFactory: IDataLakeClientFactory
     {
         private readonly ILogger _logger;
-        public DataLakeClientFactory(ILogger logger)
+        public DataLakeClientFactory(ILogger<DataLakeClientFactory> logger)
         {
             _logger = logger;
         }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+﻿using Azure.Datafactory.Extensions.DataLake;
+using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 
 [assembly: FunctionsStartup(typeof(Azure.Datafactory.Extensions.Functions.Startup))]    
@@ -11,12 +12,9 @@ namespace Azure.Datafactory.Extensions.Functions
             //  ** Registers the ILogger instance **
             builder.Services.AddLogging();
 
-            builder.Services.AddSingleton(typeof(DataLakeConfigFactory));
-
-            //  Registers the application settings' class.
-            //...
-
-            //...omitted for brevity    
+            builder.Services.AddTransient(typeof(DataLakeConfigFactory));
+            //builder.Services.AddSingleton<DataLakeConfigFactory>();
+            builder.Services.AddTransient<IDataLakeClientFactory, DataLakeClientFactory>();
         }
     }
 }

@@ -25,10 +25,12 @@ namespace Azure.Datafactory.Extensions.Functions
     {
         private readonly ILogger<DataLakeFunctions> _logger;
         private readonly DataLakeConfigFactory _configFactory;
-        public DataLakeFunctions(ILogger<DataLakeFunctions> logger, DataLakeConfigFactory configFactory)
+        private readonly IDataLakeClientFactory _clientFactory;
+        public DataLakeFunctions(ILogger<DataLakeFunctions> logger, DataLakeConfigFactory configFactory, IDataLakeClientFactory clientFactory)
         {
             _logger = logger;
             _configFactory = configFactory;
+            _clientFactory = clientFactory;
         }
 
 
@@ -50,9 +52,8 @@ namespace Azure.Datafactory.Extensions.Functions
                 if (string.IsNullOrWhiteSpace(dataLakeConfig.AccountUri))
                     throw new ArgumentException($"Account Uri '{dataLakeConfig.AccountUri}' not found. Check the URI is correct.");
 
-                var clientFactory = new DataLakeClientFactory(_logger);
-                var client = clientFactory.GetDataLakeClient(dataLakeConfig);
-                return await GetItemsAsync(client, dataLakeConfig, getItemsConfig, _logger);
+                var client = _clientFactory.GetDataLakeClient(dataLakeConfig);
+                return await GetItemsAsync(client, dataLakeConfig, getItemsConfig);
             }
             catch (ArgumentException ex)
             {
@@ -83,15 +84,14 @@ namespace Azure.Datafactory.Extensions.Functions
                 if (string.IsNullOrWhiteSpace(dataLakeConfig.AccountUri))
                     throw new ArgumentException($"Account Uri '{dataLakeConfig.AccountUri}' not found. Check the URI is correct.");
 
-                var clientFactory = new DataLakeClientFactory(_logger);
-                var client = clientFactory.GetDataLakeClient(dataLakeConfig);
+                var client = _clientFactory.GetDataLakeClient(dataLakeConfig);
 
                 var paramsJsonFragment = GetParamsJsonFragment(dataLakeConfig, getItemsConfig);
-                var validatedPath = await CheckPathAsync(client, getItemsConfig.Path, true, _logger);
+                var validatedPath = await CheckPathAsync(client, getItemsConfig.Path, true);
 
                 // If multiple files match, the function will throw and the catch block will return a BadRequestObjectResult
                 // If the path could not be found as a directory, try for a file...
-                validatedPath = validatedPath ?? await CheckPathAsync(client, getItemsConfig.Path, false, _logger);
+                validatedPath ??= await CheckPathAsync(client, getItemsConfig.Path, false);
 
                 var resultJson = "{" +
                                    $"{paramsJsonFragment}, \"validatedPath\":\"{validatedPath}\" " +
@@ -119,21 +119,6 @@ namespace Azure.Datafactory.Extensions.Functions
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         private string GetParamsJsonFragment(DataLakeConfig dataLakeConfig, object parameters)
         {
             return $"\"debugInfo\": {AssemblyHelpers.GetAssemblyVersionInfoJson()}," +
@@ -143,8 +128,27 @@ namespace Azure.Datafactory.Extensions.Functions
                         $"\"parameters\": {JsonConvert.SerializeObject(parameters, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore })}";
         }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         
-        private async Task<string> CheckPathAsync(DataLakeFileSystemClient client, string path, bool isDirectory, ILogger log)
+        private async Task<string> CheckPathAsync(DataLakeFileSystemClient client, string path, bool isDirectory)
         {
             if (path == null || path.Trim() == "/")
                 return null;
@@ -156,7 +160,7 @@ namespace Azure.Datafactory.Extensions.Functions
             if (pathExists)
                 return path;
 
-            log.LogInformation($"${(isDirectory ? "Directory" : "File")} '${path}' not found, checking paths case using case insensitive compare...");
+            _logger.LogInformation($"${(isDirectory ? "Directory" : "File")} '${path}' not found, checking paths case using case insensitive compare...");
 
             // Split the paths so we can test them seperately
             var directoryPath = isDirectory ? path : Path.GetDirectoryName(path).Replace(Path.DirectorySeparatorChar, '/');
@@ -170,7 +174,7 @@ namespace Azure.Datafactory.Extensions.Functions
                 foreach (var directoryPart in directoryParts)
                 {
                     var searchItem = directoryPart;
-                    var validPaths = MatchPathItemsCaseInsensitive(client, validDirectory, searchItem, true, log);
+                    var validPaths = MatchPathItemsCaseInsensitive(client, validDirectory, searchItem, true);
 
                     if (validPaths.Count == 0)
                         return null;
@@ -189,13 +193,13 @@ namespace Azure.Datafactory.Extensions.Functions
             if (client.GetFileClient(testFilePath).Exists())
                 return testFilePath;
 
-            var files = MatchPathItemsCaseInsensitive(client, validDirectory, filename, false, log);
+            var files = MatchPathItemsCaseInsensitive(client, validDirectory, filename, false);
             if (files.Count > 1)
                 throw new Exception("Multiple paths matched with case insensitive compare.");
             return files.FirstOrDefault();
         }
 
-        private IList<string> MatchPathItemsCaseInsensitive(DataLakeFileSystemClient client, string basePath, string searchItem, bool isDirectory, ILogger log)
+        private IList<string> MatchPathItemsCaseInsensitive(DataLakeFileSystemClient client, string basePath, string searchItem, bool isDirectory)
         {
             var paths = client.GetPaths(basePath).ToList();
             return paths.Where(p => p.IsDirectory == isDirectory && Path.GetFileName(p.Name).Equals(searchItem, StringComparison.CurrentCultureIgnoreCase))
@@ -205,10 +209,10 @@ namespace Azure.Datafactory.Extensions.Functions
         }
 
 
-        private async Task<IActionResult> GetItemsAsync(DataLakeFileSystemClient client, DataLakeConfig dataLakeConfig, DataLakeGetItemsConfig getItemsConfig, ILogger log)
+        private async Task<IActionResult> GetItemsAsync(DataLakeFileSystemClient client, DataLakeConfig dataLakeConfig, DataLakeGetItemsConfig getItemsConfig)
         {
             var directory = getItemsConfig.IgnoreDirectoryCase ?
-                                await CheckPathAsync(client, getItemsConfig.Directory, true, log) :
+                                await CheckPathAsync(client, getItemsConfig.Directory, true) :
                                 getItemsConfig.Directory;
 
             var paramsJsonFragment = GetParamsJsonFragment(dataLakeConfig, getItemsConfig);
@@ -237,7 +241,7 @@ namespace Azure.Datafactory.Extensions.Functions
             {
                 var dynamicLinqQuery = filter.GetDynamicLinqString();
                 string dynamicLinqQueryValue = filter.GetDynamicLinqValue();
-                log.LogInformation($"Applying filter: paths.AsQueryable().Where(\"{dynamicLinqQuery}\", \"{filter.Value}\").ToList()");
+                _logger.LogInformation($"Applying filter: paths.AsQueryable().Where(\"{dynamicLinqQuery}\", \"{filter.Value}\").ToList()");
                 paths = paths.AsQueryable().Where(dynamicLinqQuery, dynamicLinqQueryValue).ToList();
             }
 
