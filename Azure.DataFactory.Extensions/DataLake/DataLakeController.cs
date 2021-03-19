@@ -1,5 +1,4 @@
 ﻿using Azure.Datafactory.Extensions.DataLake.Model;
-using Azure.Datafactory.Extensions.Functions;
 using Azure.Storage.Files.DataLake;
 using Flurl;
 using Microsoft.Extensions.Logging;
@@ -11,7 +10,6 @@ using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace Azure.Datafactory.Extensions.DataLake
@@ -20,7 +18,7 @@ namespace Azure.Datafactory.Extensions.DataLake
     {
         private readonly ILogger _logger;
         private readonly DataLakeFileSystemClient _client;
-        public DataLakeController (ILogger logger, DataLakeFileSystemClient client)
+        internal DataLakeController (ILogger logger, DataLakeFileSystemClient client)
         {
             _logger = logger;
             _client = client;
@@ -86,13 +84,13 @@ namespace Azure.Datafactory.Extensions.DataLake
 
         }
 
-        private async Task<JObject> GetItemsAsync(DataLakeConfig dataLakeConfig, DataLakeGetItemsConfig getItemsConfig)
+        public async Task<JObject> GetItemsAsync(DataLakeConfig dataLakeConfig, DataLakeGetItemsConfig getItemsConfig)
         {
             var directory = getItemsConfig.IgnoreDirectoryCase ?
                                 await CheckPathAsync(getItemsConfig.Directory, true) :
                                 getItemsConfig.Directory;
 
-            var paramsJsonFragment = GetParamsJsonFragment(dataLakeConfig, getItemsConfig);
+            //var paramsJsonFragment = GetParamsJsonFragment(dataLakeConfig, getItemsConfig);
 
             if (!_client.GetDirectoryClient(directory).Exists())
                 throw new DirectoryNotFoundException("Directory '{directory} could not be found'");
@@ -143,7 +141,7 @@ namespace Azure.Datafactory.Extensions.DataLake
             var isEveryFilterValid = getItemsConfig.Filters.All(f => f.IsValid);
             if (!isEveryFilterValid)
                 //throw InvalidFilterException()
-                throw new InvalidFilterCriteriaException("Som filters are not valid");
+                throw new InvalidFilterCriteriaException("Some filters are not valid");
 
 
             var filesListJson = isEveryFilterValid ?
@@ -151,7 +149,8 @@ namespace Azure.Datafactory.Extensions.DataLake
                                      $"\"files\": {JsonConvert.SerializeObject(paths, Formatting.Indented)}" :
                                      string.Empty;
 
-            var resultJson = $"{{ {paramsJsonFragment}, {(getItemsConfig.IgnoreDirectoryCase && directory != getItemsConfig.Directory ? $"\"correctedFilePath\": \"{directory}\"," : string.Empty)} {filesListJson} }}";
+            //var resultJson = $"{{ {paramsJsonFragment}, {(getItemsConfig.IgnoreDirectoryCase && directory != getItemsConfig.Directory ? $"\"correctedFilePath\": \"{directory}\"," : string.Empty)} {filesListJson} }}";
+            var resultJson = $"{{ {(getItemsConfig.IgnoreDirectoryCase && directory != getItemsConfig.Directory ? $"\"correctedFilePath\": \"{directory}\"," : string.Empty)} {filesListJson} }}";
 
             //return isEveryFilterValid ?
             //    (IActionResult)new OkObjectResult(JObject.Parse(resultJson)) :
@@ -160,13 +159,13 @@ namespace Azure.Datafactory.Extensions.DataLake
         }
 
 
-        private string GetParamsJsonFragment(DataLakeConfig dataLakeConfig, object parameters)
-        {
-            return $"\"debugInfo\": {AssemblyHelpers.GetAssemblyVersionInfoJson()}," +
-                   $"\"storageContainerUrl\": {dataLakeConfig.BaseUrl}," +
-                   parameters == null ?
-                        string.Empty :
-                        $"\"parameters\": {JsonConvert.SerializeObject(parameters, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore })}";
-        }
+        //private string GetParamsJsonFragment(DataLakeConfig dataLakeConfig, object parameters)
+        //{
+        //    return $"\"debugInfo\": {AssemblyHelpers.GetAssemblyVersionInfoJson()}," +
+        //           $"\"storageContainerUrl\": {dataLakeConfig.BaseUrl}," +
+        //           parameters == null ?
+        //                string.Empty :
+        //                $"\"parameters\": {JsonConvert.SerializeObject(parameters, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore })}";
+        //}
     }
 }

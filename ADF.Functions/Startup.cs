@@ -13,8 +13,8 @@ namespace Azure.Datafactory.Extensions.Functions
             builder.Services.AddLogging();
 
             builder.Services.AddTransient(typeof(DataLakeConfigFactory));
-            //builder.Services.AddSingleton<DataLakeConfigFactory>();
             builder.Services.AddTransient<IDataLakeClientFactory, DataLakeClientFactory>();
+            builder.Services.AddTransient(typeof(DataLakeControllerFactory));
         }
     }
 }

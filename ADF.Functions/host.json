@@ -7,8 +7,12 @@
                 "isEnabled": true
             }
         },
-        "logLevel": {
-            "Azure.Datafactory.Extensions.Functions.DataLakeFunctions": "Information"
-        }
+      "logLevel": {
+        "Azure.Datafactory.Extensions.Functions.DataLakeFunctions": "Information",
+        "Azure.Datafactory.Extensions.Functions.FunctionsBase": "Information",
+        "Azure.Datafactory.Extensions.Functions.DataLakeConfigFactory": "Information",
+        "Azure.Datafactory.Extensions.DataLake.DataLakeClientFactory": "Information",
+        "Azure.Datafactory.Extensions.DataLake.DataLakeControllerFactory": "Information"
+      }
     }
 }

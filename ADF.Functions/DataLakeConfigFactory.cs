@@ -35,8 +35,8 @@ namespace Azure.Datafactory.Extensions.Functions
             //_logger.LogInformation($"req.GetQueryParameterDictionary(): {JsonConvert.SerializeObject(req.GetQueryParameterDictionary(), Formatting.Indented)}");
 
             var data = GetRequestData(req);
-            config.AccountUri = req.Query["accountUri"] != StringValues.Empty ? (string)req.Query["accountUri"] : data?.accountUri;
-            config.Container = req.Query["container"] != StringValues.Empty ? (string)req.Query["container"] : data?.container;
+            config.AccountUri = req.Query[AccountUriParam] != StringValues.Empty ? (string)req.Query[AccountUriParam] : data?.accountUri;
+            config.Container = req.Query[ContainerParam] != StringValues.Empty ? (string)req.Query[ContainerParam] : data?.container;
 
             return config;
         }

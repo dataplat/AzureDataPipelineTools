@@ -1,37 +1,28 @@
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Azure.Identity;
-using Azure.Storage.Files.DataLake;
-using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
-using Flurl;
 using System.Linq;
-using System.Reflection;
-using System.Linq.Dynamic.Core;
-using Azure.Storage.Files.DataLake.Models;
 using Azure.Datafactory.Extensions.DataLake;
-using Azure.Datafactory.Extensions.DataLake.Model;
 
 namespace Azure.Datafactory.Extensions.Functions
 {
-    public partial class DataLakeFunctions
+    public partial class DataLakeFunctions: FunctionsBase
     {
-        private readonly ILogger<DataLakeFunctions> _logger;
         private readonly DataLakeConfigFactory _configFactory;
         private readonly IDataLakeClientFactory _clientFactory;
-        public DataLakeFunctions(ILogger<DataLakeFunctions> logger, DataLakeConfigFactory configFactory, IDataLakeClientFactory clientFactory)
+        private readonly DataLakeControllerFactory _controllerFactory;
+        public DataLakeFunctions(ILogger<DataLakeFunctions> logger, DataLakeConfigFactory configFactory, IDataLakeClientFactory clientFactory, DataLakeControllerFactory controllerFactory):
+            base(logger)
         {
-            _logger = logger;
             _configFactory = configFactory;
             _clientFactory = clientFactory;
+            _controllerFactory = controllerFactory;
         }
+
 
 
 
@@ -53,7 +44,14 @@ namespace Azure.Datafactory.Extensions.Functions
                     throw new ArgumentException($"Account Uri '{dataLakeConfig.AccountUri}' not found. Check the URI is correct.");
 
                 var client = _clientFactory.GetDataLakeClient(dataLakeConfig);
-                return await GetItemsAsync(client, dataLakeConfig, getItemsConfig);
+                var controller = _controllerFactory.CreateDataLakeController(client);
+                
+                var responseJson = GetBaseResponse(dataLakeConfig, getItemsConfig);
+                var items = await controller.GetItemsAsync(dataLakeConfig, getItemsConfig);
+                foreach (var item in items)
+                    responseJson.Add(item.Key, item.Value);
+
+                return (IActionResult)new OkObjectResult(responseJson);
             }
             catch (ArgumentException ex)
             {
@@ -85,21 +83,20 @@ namespace Azure.Datafactory.Extensions.Functions
                     throw new ArgumentException($"Account Uri '{dataLakeConfig.AccountUri}' not found. Check the URI is correct.");
 
                 var client = _clientFactory.GetDataLakeClient(dataLakeConfig);
+                var controller = _controllerFactory.CreateDataLakeController(client);
 
-                var paramsJsonFragment = GetParamsJsonFragment(dataLakeConfig, getItemsConfig);
-                var validatedPath = await CheckPathAsync(client, getItemsConfig.Path, true);
+                var validatedPath = await controller.CheckPathAsync(getItemsConfig.Path, true);
 
                 // If multiple files match, the function will throw and the catch block will return a BadRequestObjectResult
                 // If the path could not be found as a directory, try for a file...
-                validatedPath ??= await CheckPathAsync(client, getItemsConfig.Path, false);
+                validatedPath ??= await controller.CheckPathAsync(getItemsConfig.Path, false);
 
-                var resultJson = "{" +
-                                   $"{paramsJsonFragment}, \"validatedPath\":\"{validatedPath}\" " +
-                                 "}";
+                var responseJson = GetBaseResponse(dataLakeConfig, getItemsConfig);
+                responseJson.Add("validatedPath", validatedPath);
 
                 return validatedPath != null ?
-                    (IActionResult)new OkObjectResult(JObject.Parse(resultJson)) :
-                    (IActionResult)new NotFoundObjectResult(JObject.Parse(resultJson));
+                    (IActionResult)new OkObjectResult(responseJson):
+                    (IActionResult)new NotFoundObjectResult(responseJson);
             }
             catch (ArgumentException ex)
             {
@@ -112,173 +109,6 @@ namespace Azure.Datafactory.Extensions.Functions
                 return new BadRequestObjectResult("An error occurred, see the Azure Function logs for more details");
             }
         }
-
-
-
-
-
-
-
-        private string GetParamsJsonFragment(DataLakeConfig dataLakeConfig, object parameters)
-        {
-            return $"\"debugInfo\": {AssemblyHelpers.GetAssemblyVersionInfoJson()}," +
-                   $"\"storageContainerUrl\": {dataLakeConfig.BaseUrl}," +
-                   parameters == null ? 
-                        string.Empty :
-                        $"\"parameters\": {JsonConvert.SerializeObject(parameters, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore })}";
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-        private async Task<string> CheckPathAsync(DataLakeFileSystemClient client, string path, bool isDirectory)
-        {
-            if (path == null || path.Trim() == "/")
-                return null;
-
-            // Check if the path exists with the casing as is...
-            var pathExists = isDirectory ?
-                                client.GetDirectoryClient(path).Exists() :
-                                client.GetFileClient(path).Exists();
-            if (pathExists)
-                return path;
-
-            _logger.LogInformation($"${(isDirectory ? "Directory" : "File")} '${path}' not found, checking paths case using case insensitive compare...");
-
-            // Split the paths so we can test them seperately
-            var directoryPath = isDirectory ? path : Path.GetDirectoryName(path).Replace(Path.DirectorySeparatorChar, '/');
-            var filename = isDirectory ? null : Path.GetFileName(path);
-
-            // If the directory does not exist, we find it
-            string validDirectory = null;
-            if (! await client.GetDirectoryClient(path).ExistsAsync())
-            {
-                var directoryParts = directoryPath.Split('/');
-                foreach (var directoryPart in directoryParts)
-                {
-                    var searchItem = directoryPart;
-                    var validPaths = MatchPathItemsCaseInsensitive(client, validDirectory, searchItem, true);
-
-                    if (validPaths.Count == 0)
-                        return null;
-                    else if (validPaths.Count > 1)
-                        throw new Exception("Multiple paths matched with case insensitive compare.");
-
-                    validDirectory = validPaths[0];
-                }
-            }
-
-            if (isDirectory)
-                return validDirectory;
-
-            // Now check if the file exists using the corrected directory, and if not find a match...
-            var testFilePath = $"{validDirectory ?? ""}/{filename}".TrimStart('/');
-            if (client.GetFileClient(testFilePath).Exists())
-                return testFilePath;
-
-            var files = MatchPathItemsCaseInsensitive(client, validDirectory, filename, false);
-            if (files.Count > 1)
-                throw new Exception("Multiple paths matched with case insensitive compare.");
-            return files.FirstOrDefault();
-        }
-
-        private IList<string> MatchPathItemsCaseInsensitive(DataLakeFileSystemClient client, string basePath, string searchItem, bool isDirectory)
-        {
-            var paths = client.GetPaths(basePath).ToList();
-            return paths.Where(p => p.IsDirectory == isDirectory && Path.GetFileName(p.Name).Equals(searchItem, StringComparison.CurrentCultureIgnoreCase))
-                         .Select(p => p.Name)
-                         .ToList();
-
-        }
-
-
-        private async Task<IActionResult> GetItemsAsync(DataLakeFileSystemClient client, DataLakeConfig dataLakeConfig, DataLakeGetItemsConfig getItemsConfig)
-        {
-            var directory = getItemsConfig.IgnoreDirectoryCase ?
-                                await CheckPathAsync(client, getItemsConfig.Directory, true) :
-                                getItemsConfig.Directory;
-
-            var paramsJsonFragment = GetParamsJsonFragment(dataLakeConfig, getItemsConfig);
-
-            if (!client.GetDirectoryClient(directory).Exists())
-                return new BadRequestObjectResult(JObject.Parse($"{{ {paramsJsonFragment}, \"error\": \"Directory '{directory} could not be found'\" }}"));
-
-            var paths = client
-                .GetPaths(path: directory ?? string.Empty, recursive: getItemsConfig.Recursive)
-                .Select(p => new DataLakeFile
-                {
-                    Name = Path.GetFileName(p.Name),
-                    Directory = p.IsDirectory.GetValueOrDefault(false) ?
-                                p.Name :
-                                Path.GetDirectoryName(p.Name).Replace(Path.DirectorySeparatorChar, '/'),
-                    FullPath = p.Name,
-                    Url = Url.Combine(dataLakeConfig.BaseUrl, p.Name),
-                    IsDirectory = p.IsDirectory.GetValueOrDefault(false),
-                    ContentLength = p.ContentLength.GetValueOrDefault(0),
-                    LastModified = p.LastModified.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-                })
-                .ToList();
-
-            // 1: Filter the results using dynamic LINQ
-            foreach (var filter in getItemsConfig.Filters.Where(f => f.IsValid))
-            {
-                var dynamicLinqQuery = filter.GetDynamicLinqString();
-                string dynamicLinqQueryValue = filter.GetDynamicLinqValue();
-                _logger.LogInformation($"Applying filter: paths.AsQueryable().Where(\"{dynamicLinqQuery}\", \"{filter.Value}\").ToList()");
-                paths = paths.AsQueryable().Where(dynamicLinqQuery, dynamicLinqQueryValue).ToList();
-            }
-
-            // 2: Sort the results
-            if (!string.IsNullOrWhiteSpace(getItemsConfig.OrderByColumn))
-            {
-                paths = paths.AsQueryable()
-                             .OrderBy(getItemsConfig.OrderByColumn + (getItemsConfig.OrderByDescending ? " descending" : string.Empty))
-                             .ToList();
-            }
-
-            // 3: Do a top N if required
-            if (getItemsConfig.Limit > 0 && getItemsConfig.Limit < paths.Count)
-                paths = paths.Take(getItemsConfig.Limit).ToList();
-
-
-
-            // Output the results
-            var versionAttribute = Attribute.GetCustomAttribute(Assembly.GetExecutingAssembly(), typeof(AssemblyInformationalVersionAttribute)) as AssemblyInformationalVersionAttribute;
-
-            var IsEveryFilterValid = getItemsConfig.Filters.All(f => f.IsValid);
-            var filesListJson = IsEveryFilterValid ?
-                                     $"\"fileCount\": {paths.Count}," +
-                                     $"\"files\": {JsonConvert.SerializeObject(paths, Formatting.Indented)}" :
-                                     string.Empty;
-
-            var resultJson = $"{{ {paramsJsonFragment}, {(getItemsConfig.IgnoreDirectoryCase && directory != getItemsConfig.Directory ? $"\"correctedFilePath\": \"{directory}\"," : string.Empty)} {filesListJson} }}";
-
-            return IsEveryFilterValid ?
-                (IActionResult)new OkObjectResult(JObject.Parse(resultJson)) :
-                (IActionResult)new BadRequestObjectResult(JObject.Parse(resultJson));
-        }
-
         
     }
-    
-       
-    
-
 }
