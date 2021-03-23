@@ -1,16 +1,14 @@
-﻿using SqlCollaborative.Azure.DataPipelineTools.DataLake.Model;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
 using SqlCollaborative.Azure.DataPipelineTools.Common;
+using SqlCollaborative.Azure.DataPipelineTools.DataLake.Model;
 
-namespace SqlCollaborative.Azure.DataPipelineTools.Functions
+namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
 {
     public class DataLakeConfigFactory
     {

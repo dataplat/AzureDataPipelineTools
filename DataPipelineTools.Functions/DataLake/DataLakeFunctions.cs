@@ -1,14 +1,15 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using System.Linq;
 using SqlCollaborative.Azure.DataPipelineTools.DataLake;
+using SqlCollaborative.Azure.DataPipelineTools.Functions.Common;
 
-namespace SqlCollaborative.Azure.DataPipelineTools.Functions
+namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
 {
     public partial class DataLakeFunctions: FunctionsBase
     {

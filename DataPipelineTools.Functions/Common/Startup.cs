@@ -1,9 +1,11 @@
-﻿using SqlCollaborative.Azure.DataPipelineTools.DataLake;
-using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+﻿using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
+using SqlCollaborative.Azure.DataPipelineTools.DataLake;
+using SqlCollaborative.Azure.DataPipelineTools.Functions.Common;
+using SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake;
 
-[assembly: FunctionsStartup(typeof(SqlCollaborative.Azure.DataPipelineTools.Functions.Startup))]    
-namespace SqlCollaborative.Azure.DataPipelineTools.Functions
+[assembly: FunctionsStartup(typeof(Startup))]    
+namespace SqlCollaborative.Azure.DataPipelineTools.Functions.Common
 {
     public class Startup : FunctionsStartup
     {

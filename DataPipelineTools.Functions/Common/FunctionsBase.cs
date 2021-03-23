@@ -1,9 +1,9 @@
-﻿using SqlCollaborative.Azure.DataPipelineTools.DataLake.Model;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using SqlCollaborative.Azure.DataPipelineTools.Common;
+using SqlCollaborative.Azure.DataPipelineTools.DataLake.Model;
 
-namespace SqlCollaborative.Azure.DataPipelineTools.Functions
+namespace SqlCollaborative.Azure.DataPipelineTools.Functions.Common
 {
     public abstract class FunctionsBase
     {
