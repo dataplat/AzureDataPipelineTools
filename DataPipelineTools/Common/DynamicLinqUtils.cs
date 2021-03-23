@@ -2,7 +2,7 @@
 using System.Linq.Dynamic.Core.CustomTypeProviders;
 using System.Text.RegularExpressions;
 
-namespace Azure.Datafactory.Extensions.Functions
+namespace SqlCollaborative.Azure.DataPipelineTools.Common
 {
     [DynamicLinqType]
     public static class DynamicLinqUtils

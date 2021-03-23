@@ -1,7 +1,7 @@
 ﻿using Azure.Storage.Files.DataLake;
 using Microsoft.Extensions.Logging;
 
-namespace Azure.Datafactory.Extensions.DataLake
+namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 {
     public class DataLakeControllerFactory
     {

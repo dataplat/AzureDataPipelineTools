@@ -1,4 +1,4 @@
-﻿using Azure.Datafactory.Extensions.DataLake.Model;
+﻿using SqlCollaborative.Azure.DataPipelineTools.DataLake.Model;
 using Azure.Storage.Files.DataLake;
 using Flurl;
 using Microsoft.Extensions.Logging;
@@ -12,7 +12,7 @@ using System.Linq.Dynamic.Core;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Azure.Datafactory.Extensions.DataLake
+namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 {
     public class DataLakeController
     {

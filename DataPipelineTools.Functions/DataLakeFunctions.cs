@@ -6,9 +6,9 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Linq;
-using Azure.Datafactory.Extensions.DataLake;
+using SqlCollaborative.Azure.DataPipelineTools.DataLake;
 
-namespace Azure.Datafactory.Extensions.Functions
+namespace SqlCollaborative.Azure.DataPipelineTools.Functions
 {
     public partial class DataLakeFunctions: FunctionsBase
     {

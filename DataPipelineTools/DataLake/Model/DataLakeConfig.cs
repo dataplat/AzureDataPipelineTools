@@ -1,4 +1,4 @@
-﻿namespace Azure.Datafactory.Extensions.DataLake.Model
+﻿namespace SqlCollaborative.Azure.DataPipelineTools.DataLake.Model
 {
     public class DataLakeConfig
     {

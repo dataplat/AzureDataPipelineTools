@@ -1,7 +1,7 @@
-﻿using Azure.Datafactory.Extensions.Functions;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using SqlCollaborative.Azure.DataPipelineTools.Common;
 
-namespace Azure.Datafactory.Extensions.DataLake.Model
+namespace SqlCollaborative.Azure.DataPipelineTools.DataLake.Model
 {
     public class DataLakeGetItemsConfig
     {

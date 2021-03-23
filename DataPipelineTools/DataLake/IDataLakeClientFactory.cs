@@ -1,10 +1,10 @@
-﻿using Azure.Datafactory.Extensions.DataLake.Model;
+﻿using SqlCollaborative.Azure.DataPipelineTools.DataLake.Model;
 using Azure.Identity;
 using Azure.Storage.Files.DataLake;
 using Microsoft.Extensions.Logging;
 using System;
 
-namespace Azure.Datafactory.Extensions.DataLake
+namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 {
     public interface IDataLakeClientFactory
     {

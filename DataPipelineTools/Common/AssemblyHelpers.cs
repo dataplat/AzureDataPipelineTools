@@ -2,7 +2,7 @@
 using System.Reflection;
 using Newtonsoft.Json.Linq;
 
-namespace Azure.Datafactory.Extensions.Functions
+namespace SqlCollaborative.Azure.DataPipelineTools.Common
 {
     public class AssemblyHelpers
     {

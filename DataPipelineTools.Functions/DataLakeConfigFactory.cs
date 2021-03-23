@@ -1,4 +1,4 @@
-﻿using Azure.Datafactory.Extensions.DataLake.Model;
+﻿using SqlCollaborative.Azure.DataPipelineTools.DataLake.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -8,8 +8,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using SqlCollaborative.Azure.DataPipelineTools.Common;
 
-namespace Azure.Datafactory.Extensions.Functions
+namespace SqlCollaborative.Azure.DataPipelineTools.Functions
 {
     public class DataLakeConfigFactory
     {
