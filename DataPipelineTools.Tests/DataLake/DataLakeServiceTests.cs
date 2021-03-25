@@ -24,11 +24,8 @@ namespace DataPipelineTools.Tests.DataLake
         private const string ContainerName = "mycontainer";
 
         private readonly IEnumerable<PathItem> TestData;
+
         private readonly Mock<DataLakeFileSystemClient> mockFileSystemClient;
-
-        //private readonly Mock<DataLakeDirectoryClient> mockDirectoryClient;
-        //private readonly Mock<DataLakeFileClient> mockFileClient;
-
         private readonly Mock<ILogger<DataLakeServiceFactory>> mockLogger;
        
         private readonly DataLakeService Sut;
@@ -64,14 +61,14 @@ namespace DataPipelineTools.Tests.DataLake
 
             mockFileSystemClient
                 .Setup(x => x.GetPaths(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-                .Returns((string p, bool r) =>
+                .Returns((string path, bool recursive, bool userPrinciaplName, CancellationToken token) =>
                 {
                     var items = TestData
                         // Include all files starting with the test path
-                        .Where(x => x.Name.StartsWith(p))
+                        .Where(x => x.Name.StartsWith(path ?? string.Empty) && path != null)
                         // Still include them if the recursive flag is set, otherwise check if the relative path after the search path contains 
                         // directory separator to exclude sub dirs
-                        .Where(x => r || !x.Name.Substring(p.Length).Contains('/'))
+                        .Where(x => recursive || !x.Name.Substring(path.Length).Contains('/'))
                         .ToList()
                         .AsReadOnly();
 
@@ -117,21 +114,7 @@ namespace DataPipelineTools.Tests.DataLake
                     );
             }).ToArray();
         }
-
-//private IEnumerable<DataLakeItem> GetTestData()
-//        { 
-//            return GetTestData(",", properties =>
-//            {
-//                return new DataLakeItem()
-//                {
-//                    Directory = properties[nameof(DataLakeItem.Directory)],
-//                    Name = properties[nameof(DataLakeItem.Name)],
-//                    IsDirectory = Convert.ToBoolean(properties[nameof(DataLakeItem.IsDirectory)]),
-//                    ContentLength = Convert.ToInt32(properties[nameof(DataLakeItem.ContentLength)]),
-//                    LastModified = Convert.ToDateTime(properties[nameof(DataLakeItem.LastModified)])
-//                };
-//            }).ToArray();
-//        }
+        
 
         [SetUp]
         public void Setup()
@@ -140,11 +123,50 @@ namespace DataPipelineTools.Tests.DataLake
         }
 
         [Test]
-        public void CheckPathAsync_ShouldReturn_()
+        public void CheckPathAsync_ShouldReturnThePath_WhenTheDirectoryPathExists()
         {
+            var testPath = "raw/database";
+            var correctPath = Sut.CheckPathAsync(testPath, true).Result;
             
+            Assert.That(testPath, Is.EqualTo(correctPath));
+        }
+        
+        [Test]
+        public void CheckPathAsync_ShouldReturnThePath_WhenTheFilePathExists()
+        {
+            var testPath = "raw/database/jan/extract_1.csv";
+            var correctPath = Sut.CheckPathAsync(testPath, false).Result;
+
+            Assert.That(testPath, Is.EqualTo(correctPath));
         }
 
-        
+        [Test]
+        public void CheckPathAsync_ShouldReturnNull_WhenTheIsDirectoryIsIncorrectlyFalse()
+        {
+            var testPath = "raw/database";
+            var correctPath = Sut.CheckPathAsync(testPath, false).Result;
+
+            Assert.That(testPath, Is.EqualTo(correctPath));
+        }
+
+        [Test]
+        public void CheckPathAsync_ShouldReturnNull_WhenTheIsDirectoryIsIncorrectlyTrue()
+        {
+            var testPath = "raw/database/jan/extract_1.csv";
+            var correctPath = Sut.CheckPathAsync(testPath, true).Result;
+
+            Assert.That(testPath, Is.EqualTo(correctPath));
+        }
+
+        [Test]
+        public void CheckPathAsync_ShouldReturnNull_WhenPathDoesNotExist()
+        {
+            var testPath = "some/invalid/path";
+            var correctPath = Sut.CheckPathAsync(testPath, true).Result;
+
+            Assert.That(null, Is.EqualTo(correctPath));
+        }
+
+
     }
 }
