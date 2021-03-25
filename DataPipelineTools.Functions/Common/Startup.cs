@@ -16,7 +16,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.Common
 
             builder.Services.AddTransient(typeof(DataLakeConfigFactory));
             builder.Services.AddTransient<IDataLakeClientFactory, DataLakeClientFactory>();
-            builder.Services.AddTransient(typeof(DataLakeControllerFactory));
+            builder.Services.AddTransient(typeof(DataLakeServiceFactory));
         }
     }
 }

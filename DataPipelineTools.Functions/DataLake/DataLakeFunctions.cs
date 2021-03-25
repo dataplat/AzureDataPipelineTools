@@ -15,13 +15,13 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
     {
         private readonly DataLakeConfigFactory _configFactory;
         private readonly IDataLakeClientFactory _clientFactory;
-        private readonly DataLakeControllerFactory _controllerFactory;
-        public DataLakeFunctions(ILogger<DataLakeFunctions> logger, DataLakeConfigFactory configFactory, IDataLakeClientFactory clientFactory, DataLakeControllerFactory controllerFactory):
+        private readonly DataLakeServiceFactory _serviceFactory;
+        public DataLakeFunctions(ILogger<DataLakeFunctions> logger, DataLakeConfigFactory configFactory, IDataLakeClientFactory clientFactory, DataLakeServiceFactory serviceFactory):
             base(logger)
         {
             _configFactory = configFactory;
             _clientFactory = clientFactory;
-            _controllerFactory = controllerFactory;
+            _serviceFactory = serviceFactory;
         }
 
 
@@ -45,9 +45,9 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
                     throw new ArgumentException($"Account Uri '{dataLakeConfig.AccountUri}' not found. Check the URI is correct.");
 
                 var client = _clientFactory.GetDataLakeClient(dataLakeConfig);
-                var controller = _controllerFactory.CreateDataLakeController(client);
+                var controller = _serviceFactory.CreateDataLakeService(client);
                 
-                var responseJson = GetBaseResponse(dataLakeConfig, getItemsConfig);
+                var responseJson = GetTemplateResponse(dataLakeConfig, getItemsConfig);
                 var items = await controller.GetItemsAsync(dataLakeConfig, getItemsConfig);
                 foreach (var item in items)
                     responseJson.Add(item.Key, item.Value);
@@ -84,7 +84,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
                     throw new ArgumentException($"Account Uri '{dataLakeConfig.AccountUri}' not found. Check the URI is correct.");
 
                 var client = _clientFactory.GetDataLakeClient(dataLakeConfig);
-                var controller = _controllerFactory.CreateDataLakeController(client);
+                var controller = _serviceFactory.CreateDataLakeService(client);
 
                 var validatedPath = await controller.CheckPathAsync(getItemsConfig.Path, true);
 
@@ -92,7 +92,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
                 // If the path could not be found as a directory, try for a file...
                 validatedPath ??= await controller.CheckPathAsync(getItemsConfig.Path, false);
 
-                var responseJson = GetBaseResponse(dataLakeConfig, getItemsConfig);
+                var responseJson = GetTemplateResponse(dataLakeConfig, getItemsConfig);
                 responseJson.Add("validatedPath", validatedPath);
 
                 return validatedPath != null ?

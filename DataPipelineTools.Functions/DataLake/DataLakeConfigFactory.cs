@@ -77,11 +77,11 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             return config;
         }
 
-        private IEnumerable<Filter<DataLakeFile>> ParseFilters(HttpRequest req)
+        private IEnumerable<Filter<DataLakeItem>> ParseFilters(HttpRequest req)
         {
             var filters = req.Query.Keys
                             .Where(k => k.StartsWith("filter[") && k.EndsWith("]"))
-                            .SelectMany(k => req.Query[k].Select(v => Filter<DataLakeFile>.ParseFilter(k, v, _logger)))
+                            .SelectMany(k => req.Query[k].Select(v => Filter<DataLakeItem>.ParseFilter(k, v, _logger)))
                             .Where(f => f != null);
 
             return filters;

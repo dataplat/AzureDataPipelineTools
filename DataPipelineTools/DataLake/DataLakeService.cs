@@ -11,14 +11,15 @@ using System.Linq;
 using System.Linq.Dynamic.Core;
 using System.Reflection;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Converters;
 
 namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 {
-    public class DataLakeController
+    public class DataLakeService
     {
         private readonly ILogger _logger;
         private readonly DataLakeFileSystemClient _client;
-        internal DataLakeController (ILogger logger, DataLakeFileSystemClient client)
+        internal DataLakeService (ILogger logger, DataLakeFileSystemClient client)
         {
             _logger = logger;
             _client = client;
@@ -44,6 +45,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 
             // If the directory does not exist, we find it
             string validDirectory = null;
+            var tr = _client.GetDirectoryClient(path).ExistsAsync().Result;
             if (!await _client.GetDirectoryClient(path).ExistsAsync())
             {
                 var directoryParts = directoryPath.Split('/');
@@ -90,25 +92,21 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
                                 await CheckPathAsync(getItemsConfig.Directory, true) :
                                 getItemsConfig.Directory;
 
-            //var paramsJsonFragment = GetParamsJsonFragment(dataLakeConfig, getItemsConfig);
-
             if (!_client.GetDirectoryClient(directory).Exists())
                 throw new DirectoryNotFoundException("Directory '{directory} could not be found'");
-                //return new BadRequestObjectResult(JObject.Parse($"{{ {paramsJsonFragment}, \"error\": \"Directory '{directory} could not be found'\" }}"));
 
             var paths = _client
                 .GetPaths(path: directory ?? string.Empty, recursive: getItemsConfig.Recursive)
-                .Select(p => new DataLakeFile
+                .Select(p => new DataLakeItem
                 {
                     Name = Path.GetFileName(p.Name),
                     Directory = p.IsDirectory.GetValueOrDefault(false) ?
                                 p.Name :
                                 Path.GetDirectoryName(p.Name).Replace(Path.DirectorySeparatorChar, '/'),
-                    FullPath = p.Name,
                     Url = Url.Combine(dataLakeConfig.BaseUrl, p.Name),
                     IsDirectory = p.IsDirectory.GetValueOrDefault(false),
                     ContentLength = p.ContentLength.GetValueOrDefault(0),
-                    LastModified = p.LastModified.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+                    LastModified = p.LastModified.ToUniversalTime()
                 })
                 .ToList();
 
@@ -136,36 +134,19 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 
 
             // Output the results
-            var versionAttribute = Attribute.GetCustomAttribute(Assembly.GetExecutingAssembly(), typeof(AssemblyInformationalVersionAttribute)) as AssemblyInformationalVersionAttribute;
-
             var isEveryFilterValid = getItemsConfig.Filters.All(f => f.IsValid);
             if (!isEveryFilterValid)
-                //throw InvalidFilterException()
                 throw new InvalidFilterCriteriaException("Some filters are not valid");
 
-
+            var formatter = new IsoDateTimeConverter() {DateTimeFormat = "yyyy-MM-ddTHH:mm:ss.fffZ"};
             var filesListJson = isEveryFilterValid ?
                                      $"\"fileCount\": {paths.Count}," +
-                                     $"\"files\": {JsonConvert.SerializeObject(paths, Formatting.Indented)}" :
+                                     $"\"files\": {JsonConvert.SerializeObject(paths, Formatting.Indented, formatter)}" :
                                      string.Empty;
 
-            //var resultJson = $"{{ {paramsJsonFragment}, {(getItemsConfig.IgnoreDirectoryCase && directory != getItemsConfig.Directory ? $"\"correctedFilePath\": \"{directory}\"," : string.Empty)} {filesListJson} }}";
             var resultJson = $"{{ {(getItemsConfig.IgnoreDirectoryCase && directory != getItemsConfig.Directory ? $"\"correctedFilePath\": \"{directory}\"," : string.Empty)} {filesListJson} }}";
 
-            //return isEveryFilterValid ?
-            //    (IActionResult)new OkObjectResult(JObject.Parse(resultJson)) :
-            //    (IActionResult)new BadRequestObjectResult(JObject.Parse(resultJson));
             return JObject.Parse(resultJson);
         }
-
-
-        //private string GetParamsJsonFragment(DataLakeConfig dataLakeConfig, object parameters)
-        //{
-        //    return $"\"debugInfo\": {AssemblyHelpers.GetAssemblyVersionInfoJson()}," +
-        //           $"\"storageContainerUrl\": {dataLakeConfig.BaseUrl}," +
-        //           parameters == null ?
-        //                string.Empty :
-        //                $"\"parameters\": {JsonConvert.SerializeObject(parameters, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore })}";
-        //}
     }
 }
