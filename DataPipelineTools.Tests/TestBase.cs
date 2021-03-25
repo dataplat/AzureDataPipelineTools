@@ -2,16 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Text;
-using DataPipelineTools.Tests.DataLake;
-using SqlCollaborative.Azure.DataPipelineTools.DataLake.Model;
 
 namespace DataPipelineTools.Tests
 {
     public abstract class TestBase
     {
-        //protected abstract T ParseCsv(string csvLine);
-
         protected IEnumerable<T> GetTestData<T>(string delimiter, Func<Dictionary<string, string>, T> conversionFunc)
         {
             var thisAssembly = Assembly.GetExecutingAssembly();
