@@ -8,6 +8,7 @@
             }
         },
       "logLevel": {
+        "default":  "Error" ,
         "SqlCollaborative.Azure.DataPipelineTools.Functions.DataLakeFunctions": "Information",
         "SqlCollaborative.Azure.DataPipelineTools.Functions.FunctionsBase": "Information",
         "SqlCollaborative.Azure.DataPipelineTools.Functions.DataLakeConfigFactory": "Information",

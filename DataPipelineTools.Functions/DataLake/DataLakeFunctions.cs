@@ -42,7 +42,10 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
                 var getItemsConfig = _configFactory.GetItemsConfig(req);
 
                 if (string.IsNullOrWhiteSpace(dataLakeConfig.AccountUri))
-                    throw new ArgumentException($"Account Uri '{dataLakeConfig.AccountUri}' not found. Check the URI is correct.");
+                    throw new ArgumentException($"Parameter 'accountUri' with value '{dataLakeConfig.AccountUri}' not found. Check the URI is correct.");
+
+                if (getItemsConfig.Directory == null)
+                    throw new ArgumentException($"Parameter 'directory' is required.");
 
                 var client = _clientFactory.GetDataLakeClient(dataLakeConfig);
                 var controller = _serviceFactory.CreateDataLakeService(client);
@@ -81,16 +84,19 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
                 var getItemsConfig = _configFactory.GetCheckPathCaseConfig(req);
 
                 if (string.IsNullOrWhiteSpace(dataLakeConfig.AccountUri))
-                    throw new ArgumentException($"Account Uri '{dataLakeConfig.AccountUri}' not found. Check the URI is correct.");
+                    throw new ArgumentException($"Parameter 'accountUri' with value '{dataLakeConfig.AccountUri}' not found. Check the URI is correct.");
+
+                if (getItemsConfig.Path == null)
+                    throw new ArgumentException($"Parameter 'path' is required.");
 
                 var client = _clientFactory.GetDataLakeClient(dataLakeConfig);
-                var controller = _serviceFactory.CreateDataLakeService(client);
+                var dataLakeService = _serviceFactory.CreateDataLakeService(client);
 
-                var validatedPath = await controller.CheckPathAsync(getItemsConfig.Path, true);
+                var validatedPath = await dataLakeService.CheckPathAsync(getItemsConfig.Path, true);
 
                 // If multiple files match, the function will throw and the catch block will return a BadRequestObjectResult
                 // If the path could not be found as a directory, try for a file...
-                validatedPath ??= await controller.CheckPathAsync(getItemsConfig.Path, false);
+                validatedPath ??= await dataLakeService.CheckPathAsync(getItemsConfig.Path, false);
 
                 var responseJson = GetTemplateResponse(dataLakeConfig, getItemsConfig);
                 responseJson.Add("validatedPath", validatedPath);

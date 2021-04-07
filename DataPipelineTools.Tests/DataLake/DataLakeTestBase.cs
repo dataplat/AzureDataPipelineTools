@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Azure;
@@ -55,12 +56,13 @@ namespace DataPipelineTools.Tests.DataLake
                 .Setup(x => x.GetPaths(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
                 .Returns((string path, bool recursive, bool userPrinciaplName, CancellationToken token) =>
                 {
+                    var pathLength = 1 + (path?.Length ?? 0);
                     var items = TestData
-                        // Include all files starting with the test path
-                        .Where(x => x.Name.StartsWith(path ?? string.Empty) && path != null)
+                        // Include all files starting with the test path, or root paths if the test path is null
+                        .Where(x => x.Name.StartsWith(path ?? string.Empty))// || (path == null && !x.Name.Contains('/')))
                         // Still include them if the recursive flag is set, otherwise check if the relative path after the search path contains 
                         // directory separator to exclude sub dirs
-                        .Where(x => recursive || !x.Name.Substring(path.Length).Contains('/'))
+                        .Where(x => recursive || !x.Name.Substring(pathLength > x.Name.Length ? x.Name.Length : pathLength).Contains('/'))
                         .ToList()
                         .AsReadOnly();
 
@@ -71,28 +73,28 @@ namespace DataPipelineTools.Tests.DataLake
             return mockFileSystemClient;
         }
 
-        protected T BuildMockDataLakeDirectoryClient<T>(string directoryName) where T : DataLakePathClient
+        protected T BuildMockDataLakeDirectoryClient<T>(string path) where T : DataLakePathClient
         {
-            var mockDirectoryClient = new Mock<T>();
-            mockDirectoryClient.SetupGet(x => x.FileSystemName).Returns(ContainerName);
-            mockDirectoryClient.SetupGet(x => x.AccountName).Returns(AccountUri);
-            mockDirectoryClient.SetupGet(x => x.Name).Returns(directoryName);
+            var mockDataLakePathClient = new Mock<T>();
+            mockDataLakePathClient.SetupGet(x => x.FileSystemName).Returns(ContainerName);
+            mockDataLakePathClient.SetupGet(x => x.AccountName).Returns(AccountUri);
+            mockDataLakePathClient.SetupGet(x => x.Name).Returns(path);
 
-            var directoryNameExists = TestData.Any(i => i.Name == directoryName);
-            mockDirectoryClient
+            var pathExists = TestData.Any(i => i.Name == path);
+            mockDataLakePathClient
                 .Setup(x => x.ExistsAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(() => Response.FromValue(directoryNameExists, new Mock<Response>().Object));
+                .ReturnsAsync(() => Response.FromValue(pathExists, new Mock<Response>().Object));
 
-            mockDirectoryClient
+            mockDataLakePathClient
                 .Setup(x => x.Exists(It.IsAny<CancellationToken>()))
-                .Returns(() => Response.FromValue(directoryNameExists, new Mock<Response>().Object));
+                .Returns(() => Response.FromValue(pathExists, new Mock<Response>().Object));
 
-            return mockDirectoryClient.Object;
+            return mockDataLakePathClient.Object;
         }
 
         protected IEnumerable<PathItem> GetTestData()
         {
-            return GetTestData(",", properties =>
+            var files = GetTestData(",", properties =>
             {
                 return DataLakeModelFactory.PathItem(
                     properties[nameof(PathItem.Name)],
@@ -104,7 +106,46 @@ namespace DataPipelineTools.Tests.DataLake
                     null,
                     null
                     );
-            }).ToArray();
+            }).ToList();
+
+            // Build the directories by expanding the paths in the file to add all required levels of the directory structure
+            var directories = files.SelectMany(f => ExpandAllParentPaths(f.Name))
+                .Distinct()
+                .Select(d =>
+                {
+                    var lastModified = files.Where(f => f.Name.StartsWith(d))
+                        .Select(f => f.LastModified)
+                        .Min();
+
+                    return DataLakeModelFactory.PathItem(
+                        d,
+                        true,
+                        lastModified,
+                        ETag.All,
+                        0,
+                        null,
+                        null,
+                        null
+                    );
+                })
+                // Remove dupes if the directory was listed in the source file as an empty dir
+                .Where(d => !files.Exists(f => f.Name == d.Name))
+                .ToList();
+
+            files.AddRange(directories);
+            return files.OrderBy(x => x.Name).ToList();
+        }
+
+        private IEnumerable<string> ExpandAllParentPaths(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+                return new string[0];
+
+            // Directory separators are changed when using Path.GetDirectoryName(...)
+            var parent = Path.GetDirectoryName(path).Replace('\\', '/');
+            var grandParents = ExpandAllParentPaths(parent);
+
+            return grandParents.Append(parent).Where(s => !string.IsNullOrWhiteSpace(s));
         }
     }
 }

@@ -27,8 +27,10 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 
         public async Task<string> CheckPathAsync(string path, bool isDirectory)
         {
-            if (path == null || path.Trim() == "/")
-                return null;
+            // If the string is null, empty, whitespace or a single "/" return an empty string so that the client can check a directory for
+            // files or concatenate a directory name with a filename etc without an error getting returned
+            if (string.IsNullOrWhiteSpace(path) || path.Trim() == "/")
+                return string.Empty;
 
             // Check if the path exists with the casing as is...
             var pathExists = isDirectory ?
@@ -45,7 +47,6 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 
             // If the directory does not exist, we find it
             string validDirectory = null;
-            var tr = _client.GetDirectoryClient(path).ExistsAsync().Result;
             if (!await _client.GetDirectoryClient(path).ExistsAsync())
             {
                 var directoryParts = directoryPath.Split('/');
