@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using System;
+using NUnit.Framework;
 using SqlCollaborative.Azure.DataPipelineTools.DataLake;
 
 namespace DataPipelineTools.Tests.DataLake
@@ -50,9 +51,19 @@ namespace DataPipelineTools.Tests.DataLake
         }
 
         [Test]
-        public void CheckPathAsync_Given_FilePathWithIncorrectCase_Should_ReturnCorrectedFilePath()
+        public void CheckPathAsync_Given_FilePathWithIncorrectFilenameCase_Should_ReturnCorrectedFilePath()
         {
-            var testPath = "raw/DATABASE/jan/extract_1.csv";
+            var testPath = "raw/database/jan/eXTRact_1.csv";
+            var resultPath = Sut.CheckPathAsync(testPath, false).Result;
+
+            Assert.That("raw/database/jan/extract_1.csv", Is.EqualTo(resultPath));
+        }
+
+
+        [Test]
+        public void CheckPathAsync_Given_FilePathWithIncorrectDirectoryCase_Should_ReturnCorrectedFilePath()
+        {
+            var testPath = "raw/database/JAN/extract_1.csv";
             var resultPath = Sut.CheckPathAsync(testPath, false).Result;
 
             Assert.That("raw/database/jan/extract_1.csv", Is.EqualTo(resultPath));
@@ -101,15 +112,69 @@ namespace DataPipelineTools.Tests.DataLake
             
             Assert.CatchAsync(() => Sut.CheckPathAsync(testPath, true));
         }
-
+        
         [Test]
-        public void CheckPathAsync_Given_FilePathWithIncorrectCase_When_MatchesMultiplePaths_Should_Throw()
+        public void CheckPathAsync_Given_NullPath_Should_Return_EmptyString()
         {
-            var testPath = "raw/aPi/jan/delta_extract_1.json";
+            string testPath = null;
+            var resultPath = Sut.CheckPathAsync(testPath, true).Result;
 
-            Assert.CatchAsync(() => Sut.CheckPathAsync(testPath, true));
+            Assert.That(string.Empty, Is.EqualTo(resultPath));
         }
 
+        [Test]
+        public void CheckPathAsync_Given_EmptyStringPath_Should_Return_EmptyString()
+        {
+            var testPath = string.Empty;
+            var resultPath = Sut.CheckPathAsync(testPath, true).Result;
+
+            Assert.That(string.Empty, Is.EqualTo(resultPath));
+        }
+
+        [Test]
+        public void CheckPathAsync_Given_WhitespacePath_Should_Return_EmptyString()
+        {
+            var testPath = "   \t\r\n   ";
+            var resultPath = Sut.CheckPathAsync(testPath, true).Result;
+
+            Assert.That(string.Empty, Is.EqualTo(resultPath));
+        }
+
+        [Test]
+        public void CheckPathAsync_Given_ForwardSlashPath_Should_Return_EmptyString()
+        {
+            var testPath = "/";
+            var resultPath = Sut.CheckPathAsync(testPath, true).Result;
+
+            Assert.That(string.Empty, Is.EqualTo(resultPath));
+        }
+
+        [Test]
+        public void CheckPathAsync_Given_DirectoryPathWithIncorrectCase_Should_ThrowWhenMultipleDirectoriesMatch()
+        {
+            var testPath = "RaW/api/jan";
+
+            var exception = Assert.CatchAsync(() => Sut.CheckPathAsync(testPath, true));
+            Assert.That(exception, Is.TypeOf(typeof(Exception)));
+        }
+
+        [Test]
+        public void CheckPathAsync_Given_FilePathWithIncorrectCase_Should_ThrowWhenMultipleDirectoriesMatch()
+        {
+            var testPath = "RaW/api/jan/delta_extract_1.json";
+
+            var exception = Assert.CatchAsync(() => Sut.CheckPathAsync(testPath, false));
+            Assert.That(exception, Is.TypeOf(typeof(Exception)));
+        }
+
+        [Test]
+        public void CheckPathAsync_Given_FilePathWithIncorrectCase_Should_ThrowWhenMultipleFilesMatch()
+        {
+            var testPath = "raw/database/feb/Extract_2.csv";
+
+            var exception = Assert.CatchAsync(() => Sut.CheckPathAsync(testPath, false));
+            Assert.That(exception, Is.TypeOf(typeof(Exception)));
+        }
 
 
         //[Test]

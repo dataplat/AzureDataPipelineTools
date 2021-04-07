@@ -1,6 +1,7 @@
 ﻿Name,IsDirectory,ContentLength,LastModified
 raw/database/jan/extract_1.csv,FALSE,10,02/01/2021 13:00
 raw/database/feb/extract_2.csv,FALSE,20,03/01/2021 13:00
+raw/database/feb/EXTRACT_2.csv,FALSE,25,03/01/2021 13:00
 raw/api/jan/delta_extract_1.json,FALSE,10,01/01/2021 14:00
 raw/api/jan/delta_extract_2.json,FALSE,20,02/01/2021 14:00
 raw/api/feb/delta_extract_3.json,FALSE,30,03/01/2021 14:00
