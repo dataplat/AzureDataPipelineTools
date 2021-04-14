@@ -15,7 +15,7 @@ namespace DataPipelineTools.Tests.DataLake
     /// <summary>
     /// Base class for tests that need to mock the DataLakeFileSystemClient classes
     /// </summary>
-    public class DataLakeTestBase : TestBase
+    public class DataLakeTestBase : TestBase<DataLakeServiceFactory>
     {
         protected const string AccountUri = "mydatalake";
         protected const string ContainerName = "mycontainer";
@@ -23,17 +23,12 @@ namespace DataPipelineTools.Tests.DataLake
         protected readonly IEnumerable<PathItem> TestData;
 
         protected readonly Mock<DataLakeFileSystemClient> MockFileSystemClient;
-        protected readonly Mock<ILogger<DataLakeServiceFactory>> MockLogger;
-
 
 
         public DataLakeTestBase()
         {
             // Get test data to mock the file system
             TestData = GetTestData();
-
-            // Mock the logger to test where it is called
-            MockLogger = new Mock<ILogger<DataLakeServiceFactory>>();
 
             // Mock the file system client
             MockFileSystemClient = BuildMockDataLakeFileSystemClient();

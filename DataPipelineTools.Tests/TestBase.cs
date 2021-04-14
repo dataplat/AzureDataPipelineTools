@@ -1,10 +1,46 @@
-﻿using System;
+﻿using Moq;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using Microsoft.Extensions.Logging;
+using SqlCollaborative.Azure.DataPipelineTools.DataLake;
 
 namespace DataPipelineTools.Tests
 {
+    public abstract class TestBase<T>: TestBase
+    {
+        protected readonly Mock<ILogger<T>> MockLogger;
+
+        internal TestBase()
+        {
+            // Mock the logger to test where it is called
+            MockLogger = new Mock<ILogger<T>>();
+        }
+
+        protected void SetupConsoleLogging()
+        {
+            MockLogger.Setup(
+                    l => l.Log(
+                        It.IsAny<LogLevel>(),
+                        It.IsAny<EventId>(),
+                        It.IsAny<It.IsAnyType>(),
+                        It.IsAny<Exception>(),
+                        (Func<It.IsAnyType, Exception, string>)It.IsAny<object>()))
+                .Callback((IInvocation invocation) =>
+                {
+                    var logLevel = (LogLevel)invocation.Arguments[0];
+                    var eventId = (EventId)invocation.Arguments[1];
+                    var state = (IReadOnlyCollection<KeyValuePair<string, object>>)invocation.Arguments[2];
+                    var exception = invocation.Arguments[3] as Exception;
+                    var formatter = invocation.Arguments[4] as Delegate;
+                    var formatterStr = formatter.DynamicInvoke(state, exception);
+                    Console.WriteLine($"{logLevel} - {eventId.Id} - Testing - {formatterStr}");
+                }).Verifiable();
+        }
+    }
+
     public abstract class TestBase
     {
         protected IEnumerable<T> GetTestData<T>(string delimiter, Func<Dictionary<string, string>, T> conversionFunc)

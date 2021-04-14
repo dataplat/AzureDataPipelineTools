@@ -21,6 +21,7 @@ namespace DataPipelineTools.Tests.DataLake.Model
             Assert.IsTrue(config.BaseUrl.StartsWith($"https://{AccountUri}"));
         }
 
+        [Test]
         public void BaseUrl_ShouldContain_ContainerName()
         {
             var config = new DataLakeConfig { AccountUri = AccountUri, Container = ContainerName };

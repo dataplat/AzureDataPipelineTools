@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="DataLake\DataLakeServiceTests_Data_PathItem.csv">
+    <None Update="DataLake\DataLakeServiceTests\CheckPathAsyncTests_Data_PathItem.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
