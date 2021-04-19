@@ -179,16 +179,5 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
             var exception = Assert.CatchAsync(() => Sut.CheckPathAsync(testPath, false));
             Assert.That(exception, Is.TypeOf(typeof(Exception)));
         }
-
-
-        //[Test]
-        //public void Given__Should_()
-        //{
-        //    var testPath = "some/invalid/path";
-        //    var resultPath = Sut.CheckPathAsync(testPath, true).Result;
-
-        //    Assert.That(null, Is.EqualTo(resultPath));
-        //}
-
     }
 }

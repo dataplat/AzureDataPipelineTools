@@ -6,11 +6,11 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake.Model
     public class DataLakeGetItemsConfig
     {
         public string Directory { get; set; }
-        public bool IgnoreDirectoryCase { get; set; }
-        public bool Recursive { get; set; }
+        public bool IgnoreDirectoryCase { get; set; } = true;
+        public bool Recursive { get; set; } = true;
         public string OrderByColumn { get; set; }
         public bool OrderByDescending { get; set; }
-        public int Limit { get; set; }
-        public IEnumerable<Filter<DataLakeItem>> Filters { get; set; }
+        public int Limit { get; set; } = 0;
+        public IEnumerable<Filter<DataLakeItem>> Filters { get; set; } = new Filter<DataLakeItem>[0];
     }
 }

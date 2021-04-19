@@ -82,11 +82,11 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             var filters = req.Query.Keys
                             .Where(k => k.StartsWith("filter[") && k.EndsWith("]"))
                             // Clean up the column name by removing the filter[...] parts
-                            .Select(f => f[7..^1])
-                            .SelectMany(k => req.Query[k].Select(v => FilterFactory<DataLakeItem>.Create(k, v, _logger)))
+                            //.Select(f => f[7..^1])
+                            .SelectMany(k => req.Query[k].Select(v => FilterFactory<DataLakeItem>.Create(k[7..^1], v, _logger)))
                             .Where(f => f != null);
 
-            return filters;
+            return filters.ToArray();
         }
 
         private dynamic GetRequestData(HttpRequest req)

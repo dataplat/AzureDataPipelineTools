@@ -47,35 +47,49 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 
             // If the directory does not exist, we find it
             string validDirectory = null;
+            IEnumerable<string> validDirectories = null;
             if (!await _client.GetDirectoryClient(path).ExistsAsync())
             {
-                var directoryParts = directoryPath.Split('/');
-                foreach (var directoryPart in directoryParts)
-                {
-                    var searchItem = directoryPart;
-                    var validPaths = MatchPathItemsCaseInsensitive(validDirectory, searchItem, true);
+                var validPaths = MatchPaths(null, true,directoryPath.Split('/')).ToList();
+                if (validPaths.Count == 0)
+                    return null;
+                if (validPaths.Count > 1 && isDirectory)
+                    throw new Exception("Multiple directories matched with case insensitive compare.");
 
-                    if (validPaths.Count == 0)
-                        return null;
-                    else if (validPaths.Count > 1)
-                        throw new Exception("Multiple paths matched with case insensitive compare.");
-
-                    validDirectory = validPaths[0];
-                }
+                validDirectory = validPaths[0];
+                validDirectories = validPaths;
             }
+
 
             if (isDirectory)
                 return validDirectory;
 
             // Now check if the file exists using the corrected directory, and if not find a match...
-            var testFilePath = $"{validDirectory ?? ""}/{filename}".TrimStart('/');
-            if (_client.GetFileClient(testFilePath).Exists())
-                return testFilePath;
+            var files = validDirectories.SelectMany(x => MatchPaths(x, false, filename)).ToList();
 
-            var files = MatchPathItemsCaseInsensitive(validDirectory, filename, false);
             if (files.Count > 1)
-                throw new Exception("Multiple paths matched with case insensitive compare.");
+                throw new Exception("Multiple files matched with case insensitive compare.");
             return files.FirstOrDefault();
+        }
+
+        private IEnumerable<string> MatchPaths(string basePath, bool directoriesOnly, params string[] directoryParts)
+        {
+            if (directoryParts == null)
+                return null;
+
+            if (directoryParts.Count() == 0)
+                return new []{ basePath };
+
+            var matchedDirectories = MatchPathItemsCaseInsensitive(basePath, directoryParts.First(), directoriesOnly);
+            var matchedChildDirectories = new List<string>();
+
+            foreach (var directory in matchedDirectories)
+            {
+                var childDirectories = MatchPaths(directory, true, directoryParts.Skip(1).ToArray());
+                matchedChildDirectories.AddRange(childDirectories);
+            }
+
+            return matchedChildDirectories;
         }
 
         private IList<string> MatchPathItemsCaseInsensitive(string basePath, string searchItem, bool isDirectory)
@@ -94,7 +108,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
                                 getItemsConfig.Directory;
 
             if (!_client.GetDirectoryClient(directory).Exists())
-                throw new DirectoryNotFoundException("Directory '{directory} could not be found'");
+                throw new DirectoryNotFoundException($"Directory '{directory} could not be found'");
 
             var paths = _client
                 .GetPaths(path: directory ?? string.Empty, recursive: getItemsConfig.Recursive)

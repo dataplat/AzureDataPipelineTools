@@ -92,6 +92,10 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Common
                     DateTime dateTimeVal;
                     isValueParseable = DateTime.TryParse(val, out dateTimeVal);
                     break;
+                case nameof(DateTimeOffset):
+                    DateTimeOffset dateTimeOffsetVal;
+                    isValueParseable = DateTimeOffset.TryParse(val, out dateTimeOffsetVal);
+                    break;
             }
 
             var parseError = isValueParseable ? null : $"The filter '{val}' cannot be applied to the property '{columnName}' as it cannot be cast to a '{propertyType}'";

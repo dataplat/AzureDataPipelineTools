@@ -22,6 +22,9 @@
     <None Update="DataLake\DataLakeServiceTests\CheckPathAsyncTests_Data_PathItem.csv">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="DataLake\DataLakeServiceTests\GetItemsAsyncTests_Data_PathItem.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
