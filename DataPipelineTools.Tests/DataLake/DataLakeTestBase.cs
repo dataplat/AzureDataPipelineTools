@@ -54,7 +54,7 @@ namespace DataPipelineTools.Tests.DataLake
                     var pathLength = 1 + (path?.Length ?? 0);
                     var items = TestData
                         // Include all files starting with the test path, or root paths if the test path is null
-                        .Where(x => x.Name.StartsWith(path ?? string.Empty))// || (path == null && !x.Name.Contains('/')))
+                        .Where(x => x.Name.StartsWith(path ?? string.Empty) && x.Name != path)
                         // Still include them if the recursive flag is set, otherwise check if the relative path after the search path contains 
                         // directory separator to exclude sub dirs
                         .Where(x => recursive || !x.Name.Substring(pathLength > x.Name.Length ? x.Name.Length : pathLength).Contains('/'))

@@ -12,6 +12,7 @@ namespace DataPipelineTools.Tests
         public decimal DecimalProp { get; set; }
         public double DoubleProp { get; set; }
         public DateTime DateTimeProp { get; set; }
+        public DateTimeOffset DateTimeOffsetProp { get; set; }
         public object ObjectProp { get; set; }
     }
 }

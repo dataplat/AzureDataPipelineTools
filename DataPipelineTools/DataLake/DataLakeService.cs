@@ -103,6 +103,8 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 
         public async Task<JObject> GetItemsAsync(DataLakeConfig dataLakeConfig, DataLakeGetItemsConfig getItemsConfig)
         {
+            // Check the directory exists. If multiple directories match (ie different casing), it will throw an error, as we don't know
+            // which one we wanted the files from.
             var directory = getItemsConfig.IgnoreDirectoryCase ?
                                 await CheckPathAsync(getItemsConfig.Directory, true) :
                                 getItemsConfig.Directory;

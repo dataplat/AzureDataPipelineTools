@@ -36,13 +36,14 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
             Assert.That(resultPath, Is.EqualTo(testPath));
         }
 
-        [Test]
-        public void Given_DirectoryPathWithIncorrectCase_Should_ReturnCorrectedDirectoryPath()
+        [TestCase("raw/database/JAN")]
+        [TestCase("raw/DataBase/jan")]
+        [TestCase("RAW/database/jan")]
+        public void Given_DirectoryPathWithIncorrectCase_Should_ReturnCorrectedDirectoryPath(string testPath)
         {
-            var testPath = "raw/DATABASE";
             var resultPath = Sut.CheckPathAsync(testPath, true).Result;
 
-            Assert.That(resultPath, Is.EqualTo("raw/database"));
+            Assert.That(resultPath, Is.EqualTo("raw/database/jan"));
         }
 
         [Test]
@@ -64,10 +65,11 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
         }
 
 
-        [Test]
-        public void Given_FilePathWithIncorrectDirectoryCase_Should_ReturnCorrectedFilePath()
+        [TestCase("raw/database/JAN/extract_1.csv")]
+        [TestCase("raw/DataBase/jan/extract_1.csv")]
+        [TestCase("RAW/database/jan/extract_1.csv")]
+        public void Given_FilePathWithIncorrectDirectoryCase_Should_ReturnCorrectedFilePath(string testPath)
         {
-            var testPath = "raw/database/JAN/extract_1.csv";
             var resultPath = Sut.CheckPathAsync(testPath, false).Result;
 
             Assert.That(resultPath, Is.EqualTo("raw/database/jan/extract_1.csv"));
@@ -109,11 +111,10 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
             Assert.That(resultPath, Is.EqualTo(null));
         }
 
-        [Test]
-        public void Given_DirectoryPathWithIncorrectCase_When_MatchesMultiplePaths_Should_Throw()
+        [TestCase("raw/aPi")]
+        [TestCase("RAW/api")]
+        public void Given_DirectoryPathWithIncorrectCase_When_MatchesMultiplePaths_Should_Throw(string testPath)
         {
-            var testPath = "raw/aPi";
-            
             Assert.CatchAsync(() => Sut.CheckPathAsync(testPath, true));
         }
         
@@ -153,29 +154,23 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
             Assert.That(resultPath, Is.EqualTo(string.Empty));
         }
 
-        [Test]
-        public void Given_DirectoryPathWithIncorrectCase_Should_ThrowWhenMultipleDirectoriesMatch()
+        [TestCase("RaW/api/jan")]
+        [TestCase("raw/ApI/jan")]
+        [TestCase("raw/api/JaN")]
+        public void Given_DirectoryPathWithIncorrectCase_Should_ThrowWhenMultipleDirectoriesMatch(string testPath)
         {
-            var testPath = "RaW/api/jan";
-
             var exception = Assert.CatchAsync(() => Sut.CheckPathAsync(testPath, true));
             Assert.That(exception, Is.TypeOf(typeof(Exception)));
         }
 
-        [Test]
-        public void Given_FilePathWithIncorrectCase_Should_ThrowWhenMultipleDirectoriesMatch()
+        [TestCase("RaW/api/jan/delta_extract_1.json")]
+        [TestCase("raw/ApI/jan/delta_extract_1.json")]
+        [TestCase("raw/api/JaN/delta_extract_1.json")]
+        [TestCase("raw/api/jan/delta_EXTRACT_1.json")]
+        [TestCase("raw/DataBase/feb/extract_2.csv")]
+        [TestCase("raw/database/feb/Extract_2.csv")]
+        public void Given_PathWithIncorrectCase_Should_ThrowWhenMultipleFilesMatch(string testPath)
         {
-            var testPath = "RaW/api/jan/delta_extract_1.json";
-
-            var exception = Assert.CatchAsync(() => Sut.CheckPathAsync(testPath, false));
-            Assert.That(exception, Is.TypeOf(typeof(Exception)));
-        }
-
-        [Test]
-        public void Given_FilePathWithIncorrectCase_Should_ThrowWhenMultipleFilesMatch()
-        {
-            var testPath = "raw/database/feb/Extract_2.csv";
-
             var exception = Assert.CatchAsync(() => Sut.CheckPathAsync(testPath, false));
             Assert.That(exception, Is.TypeOf(typeof(Exception)));
         }

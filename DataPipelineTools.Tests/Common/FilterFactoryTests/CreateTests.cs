@@ -129,7 +129,8 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
             {nameof(TestPoco.Int64Prop), "42"},
             {nameof(TestPoco.DoubleProp), "42.1"},
             {nameof(TestPoco.DecimalProp), "42.1"},
-            { nameof(TestPoco.DateTimeProp), "2021-01-01T12:00:00"}
+            {nameof(TestPoco.DateTimeProp), "2021-01-01T12:00:00"},
+            {nameof(TestPoco.DateTimeOffsetProp), "2021-01-01T12:00:00"}
         };
         private static readonly string[] SimpleFilterTypes = {"eq", "ne", "lt", "gt", "le", "ge" };
 

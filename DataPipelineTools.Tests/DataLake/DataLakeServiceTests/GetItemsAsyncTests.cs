@@ -54,24 +54,11 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
                 Directory = "raw/aPi/feb"
             };
 
+            var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
 
-            var r = Sut.CheckPathAsync("raw/Api/jan/delta_extract_1.json", false).Result;
-
-            var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result;
-
-            Assert.That(result.ContainsKey("fileCount"), Is.True);
-            Assert.That(result.ContainsKey("files"), Is.True);
-
-            Assert.That( (int)result.Property("fileCount").Value, Is.EqualTo(2) );
-
-            var s = result.ToObject<GetItemsResponse>();
-            var responseObject = JsonConvert.DeserializeObject<GetItemsResponse>(result.ToString());
-
-            var files = result.Property("files");
-            var itemsInfo = JsonConvert.DeserializeObject<List<DataLakeItem>>(files.ToString());
-            Assert.That(itemsInfo, Is.EqualTo(2));
-            //Assert.That(itemsInfo.Count(x => x.FullPath == "raw/api/feb"), Is.True);
-            //Assert.That(itemsInfo.Count(x => x.FullPath == "raw/api/feb/delta_extract_3.json"), Is.True);
+            Assert.That(result.fileCount, Is.EqualTo(1));
+            Assert.That(result.files.Count, Is.EqualTo(1));
+            Assert.That(result.files.Count(x => x.FullPath == "raw/api/feb/delta_extract_3.json"), Is.EqualTo(1));
         }
 
         //[Test]
