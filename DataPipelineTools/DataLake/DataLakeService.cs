@@ -117,9 +117,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
                 .Select(p => new DataLakeItem
                 {
                     Name = Path.GetFileName(p.Name),
-                    Directory = p.IsDirectory.GetValueOrDefault(false) ?
-                                p.Name :
-                                Path.GetDirectoryName(p.Name).Replace(Path.DirectorySeparatorChar, '/'),
+                    Directory = Path.GetDirectoryName(p.Name).Replace(Path.DirectorySeparatorChar, '/'),
                     Url = Url.Combine(dataLakeConfig.BaseUrl, p.Name),
                     IsDirectory = p.IsDirectory.GetValueOrDefault(false),
                     ContentLength = p.ContentLength.GetValueOrDefault(0),
