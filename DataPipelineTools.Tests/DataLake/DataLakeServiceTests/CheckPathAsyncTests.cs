@@ -14,7 +14,7 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
         public CheckPathAsyncTests()
         {
             // Use the factory to inject the mock logger to get the mock client...
-            var factory = new DataLakeServiceFactory(MockLogger.Object);
+            var factory = new DataLakeServiceFactory(Logger);
             Sut = factory.CreateDataLakeService(MockFileSystemClient.Object);
         }
 
