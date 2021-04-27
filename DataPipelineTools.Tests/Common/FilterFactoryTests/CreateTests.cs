@@ -27,7 +27,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
         [TestCaseSource(nameof(InvalidColumnNames))]
         public void Given_ColumNameIsNotValidProperty_Should_ReturnFilterWithIsValidEqualsFalse(string propertyName)
         {
-            var result = FilterFactory<TestPoco>.Create(propertyName, string.Empty, MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(propertyName, string.Empty, Logger);
 
             Assert.That(result.IsValid, Is.EqualTo(false));
         }
@@ -35,7 +35,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
         [TestCaseSource(nameof(InvalidColumnNames))]
         public void Given_ColumNameIsNotValidProperty_Should_ReturnFilterWithErrorMessageValue(string propertyName)
         {
-            var result = FilterFactory<TestPoco>.Create(propertyName, string.Empty, MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(propertyName, string.Empty, Logger);
 
             Assert.That(result.ErrorMessage, Is.Not.Null);
         }
@@ -43,7 +43,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
         [TestCaseSource(nameof(InvalidColumnNames))]
         public void Given_ColumNameIsNotValidProperty_Should_LogWarningOnce(string propertyName)
         {
-            var result = FilterFactory<TestPoco>.Create(propertyName, string.Empty, MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(propertyName, string.Empty, Logger);
 
             MockLogger.VerifyLogging(LogLevel.Warning, Times.Once());
         }
@@ -57,7 +57,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
         [TestCaseSource(nameof(InvalidOperators))]
         public void Given_OperatorIsNotValid_Should_ReturnFilterWithIsValidEqualsFalse(string filter)
         {
-            var result = FilterFactory<TestPoco>.Create(nameof(TestPoco.StringProp), filter, MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(nameof(TestPoco.StringProp), filter, Logger);
 
             Assert.That(result.IsValid, Is.EqualTo(false));
         }
@@ -65,7 +65,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
         [TestCaseSource(nameof(InvalidOperators))]
         public void Given_OperatorIsNotValid_Should_ReturnFilterWithErrorMessageValue(string filter)
         {
-            var result = FilterFactory<TestPoco>.Create(nameof(TestPoco.StringProp), filter, MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(nameof(TestPoco.StringProp), filter, Logger);
 
             Assert.That(result.ErrorMessage, Is.Not.Null);
         }
@@ -73,7 +73,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
         [TestCaseSource(nameof(InvalidOperators))]
         public void Given_OperatorIsNotValid_Should_LogWarningOnce(string filter)
         {
-            var result = FilterFactory<TestPoco>.Create(nameof(TestPoco.StringProp), filter, MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(nameof(TestPoco.StringProp), filter, Logger);
 
             MockLogger.VerifyLogging(LogLevel.Warning, Times.Once());
         }
@@ -97,7 +97,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
         [TestCaseSource(nameof(ValidNonStringColumnTypes))]
         public void Given_ValueDoesNotCastToNamedColumnType_Should_ReturnFilterWithIsValidEqualsFalse(string propertyName)
         {
-            var result = FilterFactory<TestPoco>.Create(propertyName, ValueDoesNotCastToNamedColumnTypeValue, MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(propertyName, ValueDoesNotCastToNamedColumnTypeValue, Logger);
 
             Assert.That(result.IsValid, Is.EqualTo(false));
         }
@@ -105,7 +105,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
         [TestCaseSource(nameof(InvalidOperators))]
         public void Given_ValueDoesNotCastToNamedColumnType_Should_ReturnFilterWithErrorMessageValue(string propertyName)
         {
-            var result = FilterFactory<TestPoco>.Create(propertyName, ValueDoesNotCastToNamedColumnTypeValue, MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(propertyName, ValueDoesNotCastToNamedColumnTypeValue, Logger);
 
             Assert.That(result.ErrorMessage, Is.Not.Null);
         }
@@ -113,7 +113,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
         [TestCaseSource(nameof(InvalidOperators))]
         public void Given_ValueDoesNotCastToNamedColumnType_Should_LogWarningOnce(string propertyName)
         {
-            var result = FilterFactory<TestPoco>.Create(propertyName, ValueDoesNotCastToNamedColumnTypeValue, MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(propertyName, ValueDoesNotCastToNamedColumnTypeValue, Logger);
 
             MockLogger.VerifyLogging(LogLevel.Warning, Times.Once());
         }
@@ -140,7 +140,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
             [ValueSource(nameof(SimpleFilterTypes))] string filter
             )
         {
-            var result = FilterFactory<TestPoco>.Create(propertyName.Key, $"{filter}:{propertyName.Value}", MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(propertyName.Key, $"{filter}:{propertyName.Value}", Logger);
 
             Assert.That(result.IsValid, Is.EqualTo(true));
         }
@@ -151,7 +151,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
             [ValueSource(nameof(SimpleFilterTypes))] string filter
         )
         {
-            var result = FilterFactory<TestPoco>.Create(propertyName.Key, $"{filter}:{propertyName.Value}", MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(propertyName.Key, $"{filter}:{propertyName.Value}", Logger);
 
             Assert.That(result.ErrorMessage, Is.Null);
         }
@@ -162,7 +162,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
             [ValueSource(nameof(SimpleFilterTypes))] string filter
         )
         {
-            var result = FilterFactory<TestPoco>.Create(propertyName.Key, $"{filter}:{propertyName.Value}", MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(propertyName.Key, $"{filter}:{propertyName.Value}", Logger);
 
             MockLogger.VerifyLogging(LogLevel.Warning, Times.Never());
         }
@@ -173,7 +173,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
         [Test]
         public void Given_LikeFilterWithStringColumn_Should_ReturnFilterWithIsValidEqualsTrue()
         {
-            var result = FilterFactory<TestPoco>.Create(nameof(TestPoco.StringProp), $"like:hello*", MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(nameof(TestPoco.StringProp), $"like:hello*", Logger);
 
             Assert.That(result.IsValid, Is.EqualTo(true));
         }
@@ -181,7 +181,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
         [Test]
         public void Given_LikeFilterWithStringColumn_Should_ReturnFilterErrorMessageIsNull()
         {
-            var result = FilterFactory<TestPoco>.Create(nameof(TestPoco.StringProp), $"like:hello*", MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(nameof(TestPoco.StringProp), $"like:hello*", Logger);
 
             Assert.That(result.ErrorMessage, Is.Null);
         }
@@ -189,7 +189,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
         [Test]
         public void Given_LikeFilterWithStringColumn_Should_LogZeroWarnings()
         {
-            var result = FilterFactory<TestPoco>.Create(nameof(TestPoco.StringProp), $"like:hello*", MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(nameof(TestPoco.StringProp), $"like:hello*", Logger);
 
             MockLogger.VerifyLogging(LogLevel.Warning, Times.Never());
         }
@@ -197,7 +197,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
         [TestCaseSource(nameof(ValidNonStringColumnTypes))]
         public void Given_LikeFilterWithNonStringColumn_Should_ReturnFilterWithIsValidEqualsFalse(string propertyName)
         {
-            var result = FilterFactory<TestPoco>.Create(propertyName, $"like:hello*", MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(propertyName, $"like:hello*", Logger);
 
             Assert.That(result.IsValid, Is.EqualTo(false));
         }
@@ -205,7 +205,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
         [TestCaseSource(nameof(ValidNonStringColumnTypes))]
         public void Given_LikeFilterWithNonStringColumn_Should_ReturnFilterWithErrorMessageValue(string propertyName)
         {
-            var result = FilterFactory<TestPoco>.Create(propertyName, $"like:hello*", MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(propertyName, $"like:hello*", Logger);
 
             Assert.That(result.ErrorMessage, Is.Not.Null);
         }
@@ -213,7 +213,7 @@ namespace DataPipelineTools.Tests.Common.FilterFactoryTests
         [TestCaseSource(nameof(ValidNonStringColumnTypes))]
         public void Given_LikeFilterWithNonStringColumn_Should_LogWarningOnce(string propertyName)
         {
-            var result = FilterFactory<TestPoco>.Create(propertyName, $"like:hello*", MockLogger.Object);
+            var result = FilterFactory<TestPoco>.Create(propertyName, $"like:hello*", Logger);
 
             MockLogger.VerifyLogging(LogLevel.Warning, Times.Once());
         }

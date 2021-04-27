@@ -31,7 +31,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Common
 
         public string GetDynamicLinqValue()
         {
-            return Operator == "like" ? Value.Replace("*", ".+") : Value;
+            return Operator == "like" ? Value.Replace("*", ".*") : Value;
         }
 
 

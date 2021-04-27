@@ -54,7 +54,7 @@ namespace DataPipelineTools.Tests.Common.FilterTests
             var result = filter.GetDynamicLinqValue();
 
 
-            Assert.That(result, Is.EqualTo("Some.+ne"));
+            Assert.That(result, Is.EqualTo("Some.*ne"));
         }
     }
 }

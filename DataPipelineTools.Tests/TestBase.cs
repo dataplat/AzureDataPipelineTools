@@ -11,6 +11,7 @@ namespace DataPipelineTools.Tests
 {
     public abstract class TestBase<T>: TestBase
     {
+        protected ILogger<T> Logger => MockLogger.Object;
         protected readonly Mock<ILogger<T>> MockLogger;
 
         internal TestBase()
