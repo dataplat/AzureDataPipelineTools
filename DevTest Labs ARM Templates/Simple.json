@@ -1,0 +1,72 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+
+        "project": {
+            "type": "string",
+            "defaultValue": "AzureDataPipelineTools"
+        },
+        "branch": {
+            "type": "string"
+        },
+        "commit": {
+            "type": "string"
+        },
+        "pullRequest": {
+            "type": "string",
+            "defaultValue": "N/A"
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "UK South"
+        }
+    },
+    "variables": {
+        "storageAccountApiVersion": "2019-06-01",
+        "storageAccountName": "[concat('adls', substring(uniqueString(parameters('branch')), 0, 4), '0000', substring(parameters('commit')), 0, 8)]",
+        "storageAccountResourceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+    },
+    "resources": [
+        {
+            "name": "[variables('storageAccountName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "[variables('storageAccountApiVersion')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "accessTier": "Hot",
+                "minimumTlsVersion": "TLS1_2",
+                "supportsHttpsTrafficOnly": true,
+                "allowBlobPublicAccess": true,
+                "allowSharedKeyAccess": true,
+                "isHnsEnabled": true,
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "defaultAction": "Allow"
+                }
+            },
+            "dependsOn": [],
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "StorageV2",
+            "tags": {
+                "Project": "[parameters('project')]",
+                "Commit": "[parameters('commit')]",
+                "Branch": "[parameters('branch')]",
+                "Pull Request": "[parameters('pullRequest')]",
+                "Create Date Time": "2021-04-28T12:08:00"
+            }
+        }
+    ],
+    "outputs": {
+         "storageAccountName": {
+            "type": "string",
+            "value": "[variables('storageAccountName')]"
+        },
+        "storageAccountConnectionString": {
+            "type": "string",
+            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountResourceId'), variables('storageAccountApiVersion')).keys[0].value)]"
+        }
+    }
+}
