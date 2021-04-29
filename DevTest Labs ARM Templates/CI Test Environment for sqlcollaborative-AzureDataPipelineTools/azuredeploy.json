@@ -24,7 +24,7 @@
     },
     "variables": {
         "storageAccountApiVersion": "2019-06-01",
-        "storageAccountName": "[concat('adls', substring(uniqueString(parameters('branch')), 0, 4), '0000', substring(parameters('commit')), 0, 8)]",
+        "storageAccountName": "[concat('adls', substring(uniqueString(parameters('branch')), 0, 4), '0000', substring(parameters('commit'), 0, min(length(parameters('commit')), 8)))]",
         "storageAccountResourceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
     },
     "resources": [
