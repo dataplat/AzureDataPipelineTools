@@ -51,7 +51,7 @@ namespace DataPipelineTools.Tests
             var assemblyName = thisAssembly.GetName().Name;
             var nameSpace = GetType().Namespace;
 
-            var testDataRelativePath = nameSpace.Replace(assemblyName, "").Replace(".", "\\").TrimStart('\\');
+            var testDataRelativePath = nameSpace.Replace(assemblyName, "").Replace(".", Path.DirectorySeparatorChar.ToString()).TrimStart(Path.DirectorySeparatorChar);
             var testDataPath = Path.Combine(Path.GetDirectoryName(assemblyPath), testDataRelativePath, $"{GetType().Name}_Data_{typeof(T).Name}.csv");
 
             using (var fs = new FileStream(testDataPath, FileMode.Open, FileAccess.Read, FileShare.Read))
