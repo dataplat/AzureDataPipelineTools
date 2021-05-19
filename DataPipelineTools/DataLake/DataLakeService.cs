@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Linq.Dynamic.Core;
@@ -132,6 +133,8 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
                 var dynamicLinqQueryValue = filter.GetDynamicLinqValue();
                 _logger.LogInformation($"Applying filter: paths.AsQueryable().Where(\"{dynamicLinqQuery}\", \"{filter.Value}\").ToList()");
                 paths = paths.AsQueryable().Where(dynamicLinqQuery, dynamicLinqQueryValue).ToList();
+
+                _logger.LogInformation($"Current Time Zone: {TimeZoneInfo.Local.StandardName}");
             }
 
             // 2: Sort the results
