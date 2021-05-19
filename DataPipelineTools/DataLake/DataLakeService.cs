@@ -129,7 +129,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
             foreach (var filter in getItemsConfig.Filters.Where(f => f.IsValid))
             {
                 var dynamicLinqQuery = filter.GetDynamicLinqString();
-                string dynamicLinqQueryValue = filter.GetDynamicLinqValue();
+                var dynamicLinqQueryValue = filter.GetDynamicLinqValue();
                 _logger.LogInformation($"Applying filter: paths.AsQueryable().Where(\"{dynamicLinqQuery}\", \"{filter.Value}\").ToList()");
                 paths = paths.AsQueryable().Where(dynamicLinqQuery, dynamicLinqQueryValue).ToList();
             }

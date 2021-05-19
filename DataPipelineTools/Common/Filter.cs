@@ -12,6 +12,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Common
     public class Filter<T>
     {
         public string PropertyName { get; set; }
+        public Type PropertyType { get; set; }
         public string Operator { get; set; }
         public string Value { get; set; }
         public bool IsValid { get; set; } = false;
@@ -29,14 +30,27 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Common
             }
         }
 
-        public string GetDynamicLinqValue()
+        public object GetDynamicLinqValue()
         {
-            return Operator == "like" ? Value.Replace("*", ".*") : Value;
+            // Avoid throwing trying to do an invalid cast
+            if (!IsValid)
+                return null;
+
+            switch (PropertyType.Name)
+            {
+                case nameof(DateTime):
+                    return DateTime.Parse(Value);
+                case nameof(DateTimeOffset):
+                    return DateTimeOffset.Parse(Value);
+                default:
+                    return Operator == "like" ? Value.Replace("*", ".*") : Value;
+            }
         }
 
 
         #region Newtonsoft.Json serialization methods
         public bool ShouldSerializeIsValid() => false;
+        public bool ShouldSerializePropertyType() => false;
         #endregion Newtonsoft.Json serialization methods
     }
 }

@@ -54,8 +54,8 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Common
             var val = operatorMatches.FirstOrDefault().Groups[2].Value;
 
             // If the operator is like, but it's not a string type it's not a valid filter
-            var propertyType = targetProperty.PropertyType.Name;
-            if (propertyType != nameof(String) && op == "like")
+            var propertyType = targetProperty.PropertyType;
+            if (propertyType.Name != nameof(String) && op == "like")
             {
                 var error = $"The filter column '{columnName}' is not a string, and cannot be use with the 'like' operator.";
                 log?.LogWarning(error);
@@ -68,7 +68,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Common
 
             // Now we check the filter string can be parsed into the correct type
             var isValueParseable = false;
-            switch (propertyType)
+            switch (propertyType.Name)
             {
                 case nameof(String):
                     isValueParseable = true;
@@ -98,13 +98,14 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Common
                     break;
             }
 
-            var parseError = isValueParseable ? null : $"The filter '{val}' cannot be applied to the property '{columnName}' as it cannot be cast to a '{propertyType}'";
+            var parseError = isValueParseable ? null : $"The filter '{val}' cannot be applied to the property '{columnName}' as it cannot be cast to a '{propertyType.Name}'";
             if (!isValueParseable)
                 log?.LogWarning(parseError);
 
             return new Filter<T>
             {
                 PropertyName = columnName,
+                PropertyType = propertyType,
                 Operator = op,
                 Value = val,
                 IsValid = isValueParseable,
