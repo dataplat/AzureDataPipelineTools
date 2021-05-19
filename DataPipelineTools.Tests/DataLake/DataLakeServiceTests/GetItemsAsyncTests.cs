@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -222,6 +223,8 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
             var itemsConfig = new DataLakeGetItemsConfig {Directory = directory, Filters = new[] {filter}};
             
             var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
+            
+            Logger.LogInformation($"Results JSON:\n{JsonConvert.SerializeObject(result, Formatting.Indented)}");
             
             Assert.That(result.FileCount, Is.EqualTo(expectedFileCount));
             Assert.That(result.Files, Has.Count.EqualTo(expectedFileCount));
