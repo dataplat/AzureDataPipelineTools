@@ -1,25 +1,30 @@
 ﻿using System.Linq;
 using System.Reflection;
+using Newtonsoft.Json.Linq;
 
-namespace Azure.Datafactory.Extensions.Functions
+namespace SqlCollaborative.Azure.DataPipelineTools.Common
 {
     public class AssemblyHelpers
     {
-        public static string GetAssemblyVersionInfoJson()
+        public static JObject GetAssemblyVersionInfoJson()
         {
             var callingAssembly = Assembly.GetCallingAssembly();
             return GetAssemblyVersionInfoJson(callingAssembly);
         }
 
-            public static string GetAssemblyVersionInfoJson(System.Reflection.Assembly assembly)
+        public static JObject GetAssemblyVersionInfoJson(Assembly assembly)
         {
             string buildDate = assembly.GetCustomAttributes().OfType<AssemblyMetadataAttribute>().FirstOrDefault(a => a.Key == "BuildDate")?.Value;
             string informationalVersion = assembly.GetCustomAttributes().OfType<AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion;
 
-            return "{" +
-                  $"  \"buildDate\": \"{buildDate}\"," +
-                  $"  \"informationalVersion\": \"{informationalVersion}\"" +
-                   "}";
+            var jobj = new JObject();
+            if (buildDate != null)
+                jobj.Add("buildDate", buildDate);
+
+            if (informationalVersion != null)
+                jobj.Add("informationalVersion", informationalVersion);
+
+            return jobj;
         }
 
     }

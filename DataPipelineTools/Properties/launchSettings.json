@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "SqlCollaborative.Azure.DataPipelineTools": {
+      "commandName": "Project",
+      "workingDirectory": "bin/Debug"
+    }
+  }
+}

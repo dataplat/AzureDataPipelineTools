@@ -1,0 +1,42 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30225.117
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataPipelineTools.Functions", "DataPipelineTools.Functions\DataPipelineTools.Functions.csproj", "{12DD4B77-8B6C-4F4F-B0D2-58E60D2735BF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataPipelineTools", "DataPipelineTools\DataPipelineTools.csproj", "{84B7E7A9-BDE5-4602-B99C-853CC1159CE5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2B3AB844-E7ED-4808-A57F-3315C4EE8E26}"
+	ProjectSection(SolutionItems) = preProject
+		LICENSE = LICENSE
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataPipelineTools.Tests", "DataPipelineTools.Tests\DataPipelineTools.Tests.csproj", "{A2C01394-16F9-4783-9629-2857C400D6E6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{12DD4B77-8B6C-4F4F-B0D2-58E60D2735BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{12DD4B77-8B6C-4F4F-B0D2-58E60D2735BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12DD4B77-8B6C-4F4F-B0D2-58E60D2735BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{12DD4B77-8B6C-4F4F-B0D2-58E60D2735BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{84B7E7A9-BDE5-4602-B99C-853CC1159CE5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84B7E7A9-BDE5-4602-B99C-853CC1159CE5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84B7E7A9-BDE5-4602-B99C-853CC1159CE5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84B7E7A9-BDE5-4602-B99C-853CC1159CE5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2C01394-16F9-4783-9629-2857C400D6E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2C01394-16F9-4783-9629-2857C400D6E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2C01394-16F9-4783-9629-2857C400D6E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2C01394-16F9-4783-9629-2857C400D6E6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1EC28293-D817-4502-AA0C-3AFC4593B031}
+	EndGlobalSection
+EndGlobal

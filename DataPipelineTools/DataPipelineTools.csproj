@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <OutDir>bin\$(Configuration)</OutDir>
+    <Version>1.0.0</Version>
+    <Company>Data Platform Community Collaborative</Company>
+    <Authors>Niall Langley</Authors>
+    <Product>SqlCollaborative.Azure.DataPipelineTools</Product>
+    <PackageId>SqlCollaborative.Azure.DataPipelineTools</PackageId>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageProjectUrl>https://github.com/sqlcollaborative/AzureDataPipelineTools</PackageProjectUrl>
+    <AssemblyName>SqlCollaborative.Azure.DataPipelineTools</AssemblyName>
+    <RootNamespace>SqlCollaborative.Azure.DataPipelineTools</RootNamespace>
+    <Copyright>Copyright (c) 2021 Data Platform Community Collaborative</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.3.0" />
+    <PackageReference Include="Azure.Storage.Files.DataLake" Version="12.6.0" />
+    <PackageReference Include="Flurl" Version="3.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.13" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.2.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>

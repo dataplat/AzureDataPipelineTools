@@ -1,0 +1,11 @@
+﻿Name,IsDirectory,ContentLength,LastModified
+raw/database/jan/extract_1.csv,FALSE,10,2021-01-02T13:00:00
+raw/database/feb/extract_2.csv,FALSE,20,2021-01-03T13:00:00
+raw/database/feb/EXTRACT_2.csv,FALSE,25,2021-01-03T13:00:00
+raw/api/jan/delta_extract_1.json,FALSE,50,2021-01-01T14:00:00
+raw/api/jan/delta_extract_2.json,FALSE,10,2021-01-02T14:00:00
+raw/api/jan/delta_extract_3.json,FALSE,40,2021-01-03T14:00:00
+raw/api/jan/delta_extract_4.json,FALSE,30,2021-01-04T14:00:00
+raw/api/jan/delta_extract_5.json,FALSE,20,2021-01-05T14:00:00
+raw/api/feb/delta_extract_3.json,FALSE,30,2021-01-03T14:00:00
+raw/API/jan/delta_extract_1.json,FALSE,10,2021-01-01T15:00:00
