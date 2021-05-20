@@ -213,7 +213,7 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
             new object[] { "raw/api", nameof(DataLakeItem.Url), "like:.+raw\\/api.+", 8}, // 6 files + 2 directories
             new object[] { "raw/api", nameof(DataLakeItem.IsDirectory), "eq:true", 2},
             new object[] { "raw/api", nameof(DataLakeItem.IsDirectory), "eq:false", 6},
-            new object[] { "raw/api", nameof(DataLakeItem.LastModified), "ge:2021-01-04T14:00:00+00:00", 2},
+            new object[] { "raw/api", nameof(DataLakeItem.LastModified), "ge:2021-01-04T14:00:00", 2},
         };
         [TestCaseSource(nameof(Filters))]
         public void Given_Filter_Should_ReturnRecordsMatchingFilter(string directory, string filterProperty, string filterExpression, int expectedFileCount)
@@ -223,8 +223,6 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
             var itemsConfig = new DataLakeGetItemsConfig {Directory = directory, Filters = new[] {filter}};
             
             var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
-            
-            Logger.LogInformation($"Results JSON:\n{JsonConvert.SerializeObject(result, Formatting.Indented)}");
             
             Assert.That(result.FileCount, Is.EqualTo(expectedFileCount));
             Assert.That(result.Files, Has.Count.EqualTo(expectedFileCount));
@@ -237,7 +235,6 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
             new object[] { "raw/api/jan", "Some invalid property", "ne:delta_extract_4.json"},
             new object[] { "raw/api/jan", string.Empty, "ne:delta_extract_4.json"},
             new object[] { "raw/api/jan", null, "ne:delta_extract_4.json"},
-
             new object[] { "raw/api/jan", nameof(DataLakeItem.Name), string.Empty},
             new object[] { "raw/api/jan", nameof(DataLakeItem.Name), null},
 

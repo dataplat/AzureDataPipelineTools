@@ -133,8 +133,6 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
                 var dynamicLinqQueryValue = filter.GetDynamicLinqValue();
                 _logger.LogInformation($"Applying filter: paths.AsQueryable().Where(\"{dynamicLinqQuery}\", \"{filter.Value}\").ToList()");
                 paths = paths.AsQueryable().Where(dynamicLinqQuery, dynamicLinqQueryValue).ToList();
-
-                _logger.LogInformation($"Current Time Zone: {TimeZoneInfo.Local.StandardName}");
             }
 
             // 2: Sort the results
