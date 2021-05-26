@@ -3,7 +3,7 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
 
-        "project": {
+        "gitProject": {
             "type": "string",
             "defaultValue": "AzureDataPipelineTools"
         },
@@ -51,7 +51,7 @@
             },
             "kind": "StorageV2",
             "tags": {
-                "Project": "[parameters('project')]",
+                "Git Project": "[parameters('gitProject')]",
                 "Commit": "[parameters('commit')]",
                 "Branch": "[parameters('branch')]",
                 "Pull Request": "[parameters('pullRequest')]",
