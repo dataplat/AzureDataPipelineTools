@@ -21,6 +21,13 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
+    # Variables for creating the leb environment
+    env:
+      RESOURCE_GROUP: AzureDataPipelineTools_CI
+      LAB_NAME: AzureDataPipelineTools
+      ARM_TEMPLATE_NAME: sqlcollaborative_AzureDataPipelineTools
+      
+
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -32,13 +39,110 @@ jobs:
       with:
         creds: '${{ secrets.AZURE_DEV_TEST_LABS_CREDENTIALS }}'
 
-    - name: Azure CLI script
+    # --raw-output is requiored on all jq commands that select strings, otherwise they come out with the quotes, which is interpreted as a command, and it likely won't exist!
+    - name: Create DevTest Labs Environment
+      id: create-devtest-labs-environment
       uses: azure/CLI@v1
       with:
-        #azcliversion: 2.0.72
+        #azcliversion: 2.24.0  # Versions prior to this have a bug creating environments
         inlineScript: |
-          az version | jq '.'
-          az account show | jq '.'
+          echo "========================================================================================================================================================================================================"
+          echo "Azure CLI Version: $(az version |  jq '."azure-cli"')"
+          echo
+          echo "Connection info:"
+          az account show | jq '. | {tenantId: .tenantId, subscriptionName: .name, userName: .user.name, userType: .user.type}'
+          echo
+
+          ARTIFACT_SOURCE_NAME=$(az lab artifact-source list --resource-group $RESOURCE_GROUP \
+                                                             --lab-name $LAB_NAME \
+                                     | jq --raw-output \
+                                          '.[] | select( .uri == "https://github.com/sqlcollaborative/AzureDataPipelineTools.git" ) | .name' \
+                                )
+
+          echo "Artifact Source Name: $ARTIFACT_SOURCE_NAME"
+
+          BRANCH_NAME=${GITHUB_REF#*refs/heads/}
+          echo "Branch Name: $BRANCH_NAME"
+
+          PARAMETERS_FILE="$(pwd)/azuredeploy.parameters.json"
+          echo $'[ { "name":"'branch'", "value":"'$BRANCH_NAME'" }, { "name":"'commit'", "value":"'$GITHUB_SHA'" } ]' \
+            | jq '.' > "$PARAMETERS_FILE"
+          cat $PARAMETERS_FILE
+
+          ENVIRONMENT_INSTANCE_NAME='CI_Build___'"${BRANCH_NAME////__}"'___('"${GITHUB_SHA:0:8}"')'
+          echo "Environment Instance Name: $ENVIRONMENT_INSTANCE_NAME"
+          
+          echo "::set-output name=ENVIRONMENT_INSTANCE_NAME::$ENVIRONMENT_INSTANCE_NAME"
+
+          ENVIRONMENT_CREATE_OUTPUT=$(az lab environment create --resource-group $RESOURCE_GROUP \
+                                                                --lab-name $LAB_NAME \
+                                                                --name $ENVIRONMENT_INSTANCE_NAME \
+                                                                --artifact-source-name $ARTIFACT_SOURCE_NAME \
+                                                                --arm-template $ARM_TEMPLATE_NAME \
+                                                                --parameter "@$PARAMETERS_FILE" \
+                                         | jq '.'
+                                     )
+
+          echo "Output from 'az lab environment create'"
+          echo $ENVIRONMENT_CREATE_OUTPUT
+
+          PROVISIONING_STATE=$(echo $ENVIRONMENT_CREATE_OUTPUT |  jq --raw-output '.provisioningState')
+          echo "Provisioning State: $PROVISIONING_STATE"
+
+          ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME=$(echo $ENVIRONMENT_CREATE_OUTPUT |  jq --raw-output '.resourceGroupId' | xargs basename)
+          echo "Resource Group Id: $ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME"
+          
+          echo "::set-output name=ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME::$ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME"
+
+          if [ $PROVISIONING_STATE != "Succeeded" ]; then
+            echo "::error Error provisioning lab environment"
+            exit 1
+          fi
+
+          echo "========================================================================================================================================================================================================"
+
+
+    - name: Get DevTest Labs Environment Resource Info
+      id: get-devtest-labs-environment-resources
+      uses: azure/CLI@v1
+      with:
+        #azcliversion: 2.24.0  # Versions prior to this have a bug creating environments
+        inlineScript: |
+          echo "========================================================================================================================================================================================================"
+          echo "Azure CLI Version: $(az version |  jq '."azure-cli"')"
+          echo
+          echo "Connection info:"
+          az account show | jq '. | {tenantId: .tenantId, subscriptionName: .name, userName: .user.name, userType: .user.type}'
+          echo
+
+          RESOURCE_GROUP="${{ steps.create-devtest-labs-environment.outputs.ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME }}"
+
+          ENVIRONMENT_INSTANCE_RESOURCES=$(az resource list --resource-group $RESOURCE_GROUP \
+                                            | jq '.[] | { name: .name, id: .id, provisioningState: .provisioningState, kind: .kind, location: .location, tags: .tags }'
+                                          )
+
+          echo "Output from 'az resource list --resource-group $RESOURCE_GROUP'"
+          echo
+          echo $ENVIRONMENT_INSTANCE_RESOURCES
+
+          echo "::set-output name=ENVIRONMENT_INSTANCE_RESOURCES::$ENVIRONMENT_INSTANCE_RESOURCES"
+
+          echo "========================================================================================================================================================================================================"
+
+
+
+
+      # Runs a set of commands using the runners shell
+    - name: Run a multi-line script
+      run: |
+        echo "ENVIRONMENT_INSTANCE_NAME: ${{ steps.create-devtest-labs-environment.outputs.ENVIRONMENT_INSTANCE_NAME }}"
+        echo "ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME: ${{ steps.create-devtest-labs-environment.outputs.ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME }}"
+        echo "ENVIRONMENT_INSTANCE_RESOURCES: ${{ steps.get-devtest-labs-environment-resources.outputs.ENVIRONMENT_INSTANCE_RESOURCES }}"
+  # az lab arm-template show --resource-group $RESOURCE_GROUP \
+  #                           --lab-name $LAB_NAME \
+  #                           --artifact-source-name $ARTIFACT_SOURCE_NAME \
+  #                           --name $ARM_TEMPLATE_NAME
+
 
       # # Once logged into Azure, run a test command to check it worked
       # - name: Azure CLI script
