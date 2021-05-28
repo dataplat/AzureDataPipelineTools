@@ -37,8 +37,8 @@ jobs:
       with:
         #azcliversion: 2.0.72
         inlineScript: |
-          az version
-          az account show
+          az version | jq '.'
+          az account show | jq '.'
 
       # # Once logged into Azure, run a test command to check it worked
       # - name: Azure CLI script
