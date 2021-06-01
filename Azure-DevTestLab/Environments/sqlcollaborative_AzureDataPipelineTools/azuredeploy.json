@@ -18,18 +18,92 @@
             "defaultValue": "N/A"
         },
         "location": {
+            "type": "string"
+        },
+        "deploymentTimestamp": {
             "type": "string",
-            "defaultValue": "UK South"
+            "defaultValue": "[utcNow()]"
+        },
+        "devopsServicePrincipalId": {
+            "type": "string"
         }
     },
     "variables": {
-        "storageAccountApiVersion": "2019-06-01",
-        "storageAccountName": "[concat('adls', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
-        "storageAccountResourceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+        "storageAccountApiVersion": "2021-04-01",
+        "adlsStorageAccountName": "[concat('adls', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
+        "adlsStorageAccountResourceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('adlsStorageAccountName'))]",
+        "adlsStorageAccountContainerName": "test",
+
+        "functionsAppApiVersion": "2015-08-01",
+        "functionsAppBlobStorageAccountName": "[concat('funcblob', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
+        "functionsAppName": "[concat('func', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
+
+        "authorizationApiVersion": "2018-09-01-preview",
+
+        "owner": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '8e3af657-a8ff-443c-a75c-2fe8c4bcb635')]",
+        "contributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+        "reader": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')]",
+
+        "storageBlobDataContributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
+        "storageBlobDatareader": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')]"
     },
     "resources": [
+        /********************************************************************************************************************************************
+        ****    Resource group permissions
+        ********************************************************************************************************************************************/
+        
+        // Add the devops service principal as a contributor on the resource group (DevTest Labs is configured to create an RG for
+        // each lab).
+
+        // 'Reader' scoped to the resource group
         {
-            "name": "[variables('storageAccountName')]",
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "[variables('authorizationApiVersion')]",
+            "name": "[guid(resourceGroup().id, 'devopsServicePrincipal_rg_contributor')]",
+            "properties": {
+                "roleDefinitionId": "[variables('contributor')]",
+                "principalId": "[parameters('devopsServicePrincipalId')]"
+            }
+        },
+
+        // 'Storage Blob Data Reader' scoped to the storage account
+        {
+            "type": "Microsoft.Storage/storageAccounts/providers/roleAssignments",
+            "name": "[concat(variables('adlsStorageAccountName'),'/Microsoft.Authorization/',guid(resourceGroup().id, 'devopsServicePrincipal_adlsStorageAccount_storageBlobDataReader'))]",
+            "apiVersion": "[variables('authorizationApiVersion')]",
+            "properties": {
+                "roleDefinitionId": "[variables('storageBlobDatareader')]",
+                "principalId": "[parameters('devopsServicePrincipalId')]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'))]"
+            ]
+        },
+
+        // 'Storage Blob Data Contributor' scoped to the storage account container
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers/providers/roleAssignments",
+            "name": "[concat(variables('adlsStorageAccountName'), '/default/', variables('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, 'devopsServicePrincipal_adlsStorageAccountContainer_test_storageBlobDataContributor'))]",
+            "apiVersion": "[variables('authorizationApiVersion')]",
+            //"scope": "[concat(resourceGroup().id, '/providers/Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'), '/blobServices/containers/containers/', variables('adlsStorageAccountContainerName'))]",
+            "properties": {
+                "roleDefinitionId": "[variables('storageBlobDataContributor')]",
+                "principalId": "[parameters('devopsServicePrincipalId')]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'), '/blobServices/default/containers/', variables('adlsStorageAccountContainerName'))]",
+            ]
+        },
+
+        // TODO: Add IAM access for functions app. See the following page for details of how to get the object id for the SPN
+        //          https://www.codeisahighway.com/there-is-a-new-way-to-reference-managed-identity-in-arm-template/
+
+
+        /********************************************************************************************************************************************
+        ****    ADLS storage
+        ********************************************************************************************************************************************/
+        {
+            "name": "[variables('adlsStorageAccountName')]",
             "type": "Microsoft.Storage/storageAccounts",
             "apiVersion": "[variables('storageAccountApiVersion')]",
             "location": "[parameters('location')]",
@@ -37,7 +111,7 @@
                 "accessTier": "Hot",
                 "minimumTlsVersion": "TLS1_2",
                 "supportsHttpsTrafficOnly": true,
-                "allowBlobPublicAccess": true,
+                "allowBlobPublicAccess": false,
                 "allowSharedKeyAccess": true,
                 "isHnsEnabled": true,
                 "networkAcls": {
@@ -45,7 +119,9 @@
                     "defaultAction": "Allow"
                 }
             },
-            "dependsOn": [],
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]"
+            ],
             "sku": {
                 "name": "Standard_LRS"
             },
@@ -55,18 +131,108 @@
                 "Commit": "[parameters('commit')]",
                 "Branch": "[parameters('branch')]",
                 "Pull Request": "[parameters('pullRequest')]",
-                "Create Date Time": "2021-04-28T12:08:00"
+                "Create Date Time": "[parameters('deploymentTimestamp')]",
+                "Git Project Resource Code": "ADLS",
+                "RG": "[resourceGroup().name]"
+            },
+            "resources": [
+                // Add a container to the storage account
+                {
+                    "name": "[concat('default/', variables('adlsStorageAccountContainerName'))]",
+                    "type": "blobServices/containers",
+                    "apiVersion": "[variables('storageAccountApiVersion')]",
+                    "properties": {
+                        "publicAccess": "None"
+                    },
+                    "dependsOn": [
+                        "[variables('adlsStorageAccountName')]"
+                    ]
+                }
+            ]
+        },
+
+
+        /********************************************************************************************************************************************
+        ****    Functions Apps
+        ********************************************************************************************************************************************/
+        
+        // Blob storage for the functions app
+        {
+            "apiVersion": "[variables('storageAccountApiVersion')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('functionsAppBlobStorageAccountName')]",
+            "location": "[parameters('location')]",
+            "tags": {
+                "Git Project": "[parameters('gitProject')]",
+                "Commit": "[parameters('commit')]",
+                "Branch": "[parameters('branch')]",
+                "Pull Request": "[parameters('pullRequest')]",
+                "Create Date Time": "[parameters('deploymentTimestamp')]",
+                "Git Project Resource Code": "FunctionsAppStorage"
+            },
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "properties": {
+                "supportsHttpsTrafficOnly": true,
+                "minimumTlsVersion": "TLS1_2"
+            }
+        },
+
+        // Functions app, cofigured to use .Net Core 3.X with the blob storage above
+        {
+            "apiVersion": "[variables('functionsAppApiVersion')]",
+            "type": "Microsoft.Web/sites",
+            "name": "[variables('functionsAppName')]",
+            "location": "[parameters('location')]",
+            "kind": "functionapp",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('functionsAppBlobStorageAccountName'))]"
+            ],
+            "tags": {
+                "Git Project": "[parameters('gitProject')]",
+                "Commit": "[parameters('commit')]",
+                "Branch": "[parameters('branch')]",
+                "Pull Request": "[parameters('pullRequest')]",
+                "Create Date Time": "[parameters('deploymentTimestamp')]",
+                "Git Project Resource Code": "FunctionsApp"
+            },
+            "properties": {
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~3"
+                        },
+                        {
+                            "name": "FUNCTIONS_WORKER_RUNTIME",
+                            "value": "dotnet"
+                        },
+                        {
+                            "name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('functionsAppBlobStorageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('functionsAppBlobStorageAccountName')), variables('storageAccountApiVersion')).keys[0].value,';EndpointSuffix=','core.windows.net')]"
+                        }
+                    ]
+                }
             }
         }
     ],
+
+    /********************************************************************************************************************************************
+    ****    Outputs, does not seem to help when deploying uzing the Azure CLI 'az lab environment create' command
+    ********************************************************************************************************************************************/
+        
     "outputs": {
          "storageAccountName": {
             "type": "string",
-            "value": "[variables('storageAccountName')]"
+            "value": "[variables('adlsStorageAccountName')]"
         },
         "storageAccountConnectionString": {
             "type": "string",
-            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountResourceId'), variables('storageAccountApiVersion')).keys[0].value)]"
+            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('adlsStorageAccountName'), ';AccountKey=', listKeys(variables('adlsStorageAccountResourceId'), variables('storageAccountApiVersion')).keys[0].value)]"
         }
     }
 }

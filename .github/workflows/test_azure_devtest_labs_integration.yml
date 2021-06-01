@@ -64,8 +64,22 @@ jobs:
           BRANCH_NAME=${GITHUB_REF#*refs/heads/}
           echo "Branch Name: $BRANCH_NAME"
 
+          # This is the object id of the Enterprise Application created from the App Registration
+
+          echo "Retriving service principal id for the logged in user..."
+          SERVICEPRINCIPALAPPID=$(az account show | jq --raw-output '.user.name')
+          echo "Service Principal App Id: $SERVICEPRINCIPALAPPID"
+
+          SERVICEPRINCIPALID=$( az ad sp list --filter "appId eq '$SERVICEPRINCIPALAPPID' and servicePrincipalType eq 'Application'" --query [0].objectId --output tsv)
+          echo "Service Principal Object Id: $SERVICEPRINCIPALID"
+
+          echo "Building parameters file for ARM deployment..."
           PARAMETERS_FILE="$(pwd)/azuredeploy.parameters.json"
-          echo $'[ { "name":"'branch'", "value":"'$BRANCH_NAME'" }, { "name":"'commit'", "value":"'$GITHUB_SHA'" } ]' \
+          echo $'[ { "name":"'branch'", "value":"'$BRANCH_NAME'" },' \
+                '  { "name":"'commit'", "value":"'$GITHUB_SHA'" },' \
+                '  { "name":"'location'", "value":"UK South" },' \
+                '  { "name":"'devopsServicePrincipalId'", "value":"'$SERVICEPRINCIPALID'" }' \
+                ']' \
             | jq '.' > "$PARAMETERS_FILE"
           cat $PARAMETERS_FILE
 
@@ -80,6 +94,7 @@ jobs:
                                                                 --artifact-source-name $ARTIFACT_SOURCE_NAME \
                                                                 --arm-template $ARM_TEMPLATE_NAME \
                                                                 --parameter "@$PARAMETERS_FILE" \
+                                                                --verbose \
                                          | jq '.'
                                      )
 
