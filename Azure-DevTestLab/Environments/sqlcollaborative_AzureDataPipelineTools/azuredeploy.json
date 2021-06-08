@@ -26,13 +26,17 @@
         },
         "devopsServicePrincipalId": {
             "type": "string"
+        },
+        "adlsStorageAccountContainerName": {
+            "type": "string",
+            "defaultValue": "test"
         }
     },
     "variables": {
         "storageAccountApiVersion": "2021-04-01",
         "adlsStorageAccountName": "[concat('adls', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
         "adlsStorageAccountResourceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('adlsStorageAccountName'))]",
-        "adlsStorageAccountContainerName": "test",
+        //"adlsStorageAccountContainerName": "test",
 
         "functionsAppApiVersion": "2015-08-01",
         "functionsAppBlobStorageAccountName": "[concat('funcblob', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
@@ -83,7 +87,8 @@
         // 'Storage Blob Data Contributor' scoped to the storage account container
         {
             "type": "Microsoft.Storage/storageAccounts/blobServices/containers/providers/roleAssignments",
-            "name": "[concat(variables('adlsStorageAccountName'), '/default/', variables('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, 'devopsServicePrincipal_adlsStorageAccountContainer_test_storageBlobDataContributor'))]",
+            //"name": "[concat(variables('adlsStorageAccountName'), '/default/', parameters('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, 'devopsServicePrincipal_adlsStorageAccountContainer', parameters('adlsStorageAccountContainerName'), 'test_storageBlobDataContributor'))]",
+            "name": "[concat(variables('adlsStorageAccountName'), '/default/', parameters('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('devopsServicePrincipalId'), variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDataContributor')))]",
             "apiVersion": "[variables('authorizationApiVersion')]",
             //"scope": "[concat(resourceGroup().id, '/providers/Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'), '/blobServices/containers/containers/', variables('adlsStorageAccountContainerName'))]",
             "properties": {
@@ -91,13 +96,42 @@
                 "principalId": "[parameters('devopsServicePrincipalId')]"
             },
             "dependsOn": [
-                "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'), '/blobServices/default/containers/', variables('adlsStorageAccountContainerName'))]",
+                "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'), '/blobServices/default/containers/', parameters('adlsStorageAccountContainerName'))]"
             ]
         },
 
-        // TODO: Add IAM access for functions app. See the following page for details of how to get the object id for the SPN
-        //          https://www.codeisahighway.com/there-is-a-new-way-to-reference-managed-identity-in-arm-template/
+        // Add IAM access for functions app. See the following page for details of how to get the object id for the SPN
+        //   https://www.codeisahighway.com/there-is-a-new-way-to-reference-managed-identity-in-arm-template/
+        
+        // 'Reader' scoped to the storage account
+        {
+            "type": "Microsoft.Storage/storageAccounts/providers/roleAssignments",
+            "name": "[concat(variables('adlsStorageAccountName'),'/Microsoft.Authorization/',guid(resourceGroup().id, variables('functionsAppName'), variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('reader')))]",
+            "apiVersion": "[variables('authorizationApiVersion')]",
+            "properties": {
+                "roleDefinitionId": "[variables('reader')]",
+                "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('functionsAppName')), variables('functionsAppApiVersion'), 'full').identity.principalId]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'))]",
+                "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]"
+            ]
+        },
 
+        // 'Storage Blob Data Reader' scoped to the storage account
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers/providers/roleAssignments",
+            "name": "[concat(variables('adlsStorageAccountName'), '/default/', parameters('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, variables('functionsAppName'), variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDatareader')))]",
+            "apiVersion": "[variables('authorizationApiVersion')]",
+            "properties": {
+                "roleDefinitionId": "[variables('storageBlobDatareader')]",
+                "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('functionsAppName')), variables('functionsAppApiVersion'), 'full').identity.principalId]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'))]",
+                "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]"
+            ]
+        },
 
         /********************************************************************************************************************************************
         ****    ADLS storage
@@ -138,7 +172,7 @@
             "resources": [
                 // Add a container to the storage account
                 {
-                    "name": "[concat('default/', variables('adlsStorageAccountContainerName'))]",
+                    "name": "[concat('default/', parameters('adlsStorageAccountContainerName'))]",
                     "type": "blobServices/containers",
                     "apiVersion": "[variables('storageAccountApiVersion')]",
                     "properties": {
