@@ -42,8 +42,8 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 
             _logger.LogInformation($"${(isDirectory ? "Directory" : "File")} '${path}' not found, checking paths case using case insensitive compare...");
 
-            // Split the paths so we can test them seperately
-            var directoryPath = isDirectory ? path : Path.GetDirectoryName(path).Replace(Path.DirectorySeparatorChar, '/');
+            // Split the paths so we can test them separately
+            var directoryPath = isDirectory ? path : Path.GetDirectoryName(path)?.Replace(Path.DirectorySeparatorChar, '/');
             var filename = isDirectory ? null : Path.GetFileName(path);
 
             // If the directory does not exist, we find it
@@ -106,10 +106,27 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
         {
             // Check the directory exists. If multiple directories match (ie different casing), it will throw an error, as we don't know
             // which one we wanted the files from.
+            /* TODO: When the path does not exist, this is throwing an exception:
+                       Azure.RequestFailedException: Service request failed.
+                       Status: 400 (The requested URI does not represent any resource on the server.)
+                       ErrorCode: InvalidUri
+
+                           at Azure.Storage.Blobs.BlobRestClient.Blob.GetPropertiesAsync_CreateResponse(ClientDiagnostics clientDiagnostics, Response response)
+                           at Azure.Storage.Blobs.BlobRestClient.Blob.GetPropertiesAsync(ClientDiagnostics clientDiagnostics, HttpPipeline pipeline, Uri resourceUri, String version, String snapshot, String versionId, Nullable`1 timeout, String leaseId, String encryptionKey, String encryptionKeySha256, Nullable`1 encryptionAlgorithm, Nullable`1 ifModifiedSince, Nullable`1 ifUnmodifiedSince, Nullable`1 ifMatch, Nullable`1 ifNoneMatch, String ifTags, String requestId, Boolean async, String operationName, CancellationToken cancellationToken)
+                           at Azure.Storage.Blobs.Specialized.BlobBaseClient.GetPropertiesInternal(BlobRequestConditions conditions, Boolean async, CancellationToken cancellationToken, String operationName)
+                           at Azure.Storage.Blobs.Specialized.BlobBaseClient.ExistsInternal(Boolean async, CancellationToken cancellationToken)
+                           at Azure.Storage.Blobs.Specialized.BlobBaseClient.Exists(CancellationToken cancellationToken)
+                           at Azure.Storage.Files.DataLake.DataLakePathClient.Exists(CancellationToken cancellationToken)
+                           at SqlCollaborative.Azure.DataPipelineTools.DataLake.DataLakeService.GetItemsAsync(DataLakeConfig dataLakeConfig, DataLakeGetItemsConfig getItemsConfig) 
+                             in /home/runner/work/AzureDataPipelineTools/AzureDataPipelineTools/DataPipelineTools/DataLake/DataLakeService.cs:line 109
+                           at SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake.DataLakeFunctions.DataLakeGetItems(HttpRequest req) 
+                             in /home/runner/work/AzureDataPipelineTools/AzureDataPipelineTools/DataPipelineTools.Functions/DataLake/DataLakeFunctions.cs:line 54
+            */
             var directory = getItemsConfig.IgnoreDirectoryCase ?
                                 await CheckPathAsync(getItemsConfig.Directory, true) :
                                 getItemsConfig.Directory;
 
+            
             if (!_client.GetDirectoryClient(directory).Exists())
                 throw new DirectoryNotFoundException($"Directory '{directory} could not be found'");
 

@@ -65,7 +65,8 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             bool.TryParse(req.Query[IgnoreDirectoryCaseParam] != StringValues.Empty ? (string)req.Query[IgnoreDirectoryCaseParam] : data?.ignoreDirectoryCase, out ignoreDirectoryCase);
             int.TryParse(req.Query[LimitParam] != StringValues.Empty ? (string)req.Query[LimitParam] : data?.orderByDesc, out limit);
 
-            config.Directory = req.Query[DirectoryParam] != StringValues.Empty ? (string)req.Query[DirectoryParam] : data?.directory;
+            string directory = req.Query[DirectoryParam] != StringValues.Empty || data?.directory  == null ? (string)req.Query[DirectoryParam] : data?.directory;
+            config.Directory = directory?.TrimStart('/');
             config.IgnoreDirectoryCase = ignoreDirectoryCase;
             config.Recursive = recursive;
             config.OrderByColumn = req.Query[OrderByColumnParam] != StringValues.Empty ? (string)req.Query[OrderByColumnParam] : data?.orderBy;
