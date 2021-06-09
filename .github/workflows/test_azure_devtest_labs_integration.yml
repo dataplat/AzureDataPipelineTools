@@ -62,11 +62,9 @@ jobs:
           az account show | jq '. | {tenantId: .tenantId, subscriptionName: .name, userName: .user.name, userType: .user.type}'
           echo
           
-          echo "========================================================================================================================================================================================================"
+          echo "Configuring variables for secrets:"
+          # We need the secrets in a variable so we can work with them using normal shell script syntax. The '${ {  VAR } }' syntax is token replaced before the script runs.
           SERVICEPRINCIPALCREDENTIALS=$'${{ secrets.AZURE_DEV_TEST_LABS_CREDENTIALS }}'
-          SERVICEPRINCIPALCREDENTIALSLENGTH=${#SERVICEPRINCIPALCREDENTIALS}
-          echo 'SERVICEPRINCIPALCREDENTIALSLENGTH: '$SERVICEPRINCIPALCREDENTIALSLENGTH
-          $SERVICEPRINCIPALCREDENTIALSLENGTH | jq '.'
           echo "========================================================================================================================================================================================================"
           echo
 
@@ -82,7 +80,6 @@ jobs:
           echo "Branch Name: $BRANCH_NAME"
 
           # This is the object id of the Enterprise Application created from the App Registration
-
           echo "Retriving service principal id for the logged in user..."
           SERVICEPRINCIPALAPPID=$(az account show | jq --raw-output '.user.name')
           echo "Service Principal App Id: $SERVICEPRINCIPALAPPID"
@@ -133,7 +130,13 @@ jobs:
           fi
 
           echo "========================================================================================================================================================================================================"
-
+          DEPLOYMENTOUTPUT=$(az deployment group list --resource-group $ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME --query '[0].properties.outputs')
+          
+          echo "Deployment Output"
+          echo "::set-output name=DEPLOYMENTOUTPUT::$DEPLOYMENTOUTPUT"
+          echo "::set-output name=STORAGEACCOUNTCONNECTIONSTRING::$($STORAGEACCOUNTCONNECTIONSTRING | jq '.storageAccountConnectionString.value')"
+          echo "::set-output name=STORAGEACCOUNTNAME::$($STORAGEACCOUNTNAME | jq '.storageAccountName.value')"
+          echo "========================================================================================================================================================================================================"
 
 
 
