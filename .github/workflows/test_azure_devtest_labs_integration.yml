@@ -33,11 +33,20 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
 
+    # - name: Extract 
+    #   run: |
+    #     echo "Retriving service principal client secret for the logged in user..."
+    #     echo $("${{ secrets.AZURE_DEV_TEST_LABS_CREDENTIALS }}" | jq '.clientId')
+
+
+
     # Login to Azure
     - name: Log into Azure
       uses: azure/login@v1
       with:
         creds: '${{ secrets.AZURE_DEV_TEST_LABS_CREDENTIALS }}'
+
+
 
     # --raw-output is requiored on all jq commands that select strings, otherwise they come out with the quotes, which is interpreted as a command, and it likely won't exist!
     - name: Create DevTest Labs Environment
@@ -51,6 +60,14 @@ jobs:
           echo
           echo "Connection info:"
           az account show | jq '. | {tenantId: .tenantId, subscriptionName: .name, userName: .user.name, userType: .user.type}'
+          echo
+          
+          echo "========================================================================================================================================================================================================"
+          SERVICEPRINCIPALCREDENTIALS=$'${{ secrets.AZURE_DEV_TEST_LABS_CREDENTIALS }}'
+          SERVICEPRINCIPALCREDENTIALSLENGTH=${#SERVICEPRINCIPALCREDENTIALS}
+          echo 'SERVICEPRINCIPALCREDENTIALSLENGTH: '$SERVICEPRINCIPALCREDENTIALSLENGTH
+          $SERVICEPRINCIPALCREDENTIALSLENGTH | jq '.'
+          echo "========================================================================================================================================================================================================"
           echo
 
           ARTIFACT_SOURCE_NAME=$(az lab artifact-source list --resource-group $RESOURCE_GROUP \
@@ -78,7 +95,8 @@ jobs:
           echo $'[ { "name":"'branch'", "value":"'$BRANCH_NAME'" },' \
                 '  { "name":"'commit'", "value":"'$GITHUB_SHA'" },' \
                 '  { "name":"'location'", "value":"UK South" },' \
-                '  { "name":"'devopsServicePrincipalId'", "value":"'$SERVICEPRINCIPALID'" }' \
+                '  { "name":"'devopsServicePrincipalId'", "value":"'$SERVICEPRINCIPALID'" },' \
+                '  { "name":"'devopsServicePrincipalCredentials'", "value":' $SERVICEPRINCIPALCREDENTIALS ' }' \
                 ']' \
             | jq '.' > "$PARAMETERS_FILE"
           cat $PARAMETERS_FILE
@@ -117,6 +135,12 @@ jobs:
           echo "========================================================================================================================================================================================================"
 
 
+
+
+    #- run: azcopy_v10 --source {SOURCE} --destination {DEST} --dest-key ${{ secrets.STORAGE_KEY }} --recursive --set-content-type
+
+
+
     - name: Get DevTest Labs Environment Resource Info
       id: get-devtest-labs-environment-resources
       uses: azure/CLI@v1
@@ -144,16 +168,45 @@ jobs:
 
           echo "========================================================================================================================================================================================================"
 
+   
+   # Install AZCopy and copy sample files into the data lake
+    - name: Install azcopy
+      uses: kheiakiyama/install-azcopy-action@v1.0.3
+      with:
+        version: 'v10'
+
+    - name: Copy files to Azure Data Lake using AZCopy
+      run: |
+        ls
+#azcopy_v10 --source {SOURCE} --destination {DEST} --dest-key ${{ secrets.STORAGE_KEY }} --recursive --set-content-type
+ 
 
 
-
-      # Runs a set of commands using the runners shell
+    # Runs a set of commands using the runners shell
     - name: Run a multi-line script
       run: |
         echo "ENVIRONMENT_INSTANCE_NAME: ${{ steps.create-devtest-labs-environment.outputs.ENVIRONMENT_INSTANCE_NAME }}"
         echo "ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME: ${{ steps.create-devtest-labs-environment.outputs.ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME }}"
         echo "ENVIRONMENT_INSTANCE_RESOURCES: ${{ steps.get-devtest-labs-environment-resources.outputs.ENVIRONMENT_INSTANCE_RESOURCES }}"
-  # az lab arm-template show --resource-group $RESOURCE_GROUP \
+        # az lab arm-template show --resource-group $RESOURCE_GROUP
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   #                           --lab-name $LAB_NAME \
   #                           --artifact-source-name $ARTIFACT_SOURCE_NAME \
   #                           --name $ARM_TEMPLATE_NAME

@@ -27,6 +27,9 @@
         "devopsServicePrincipalId": {
             "type": "string"
         },
+        "devopsServicePrincipalCredentials": {
+            "type": "object"
+        },
         "adlsStorageAccountContainerName": {
             "type": "string",
             "defaultValue": "test"
@@ -269,6 +272,17 @@
                     ],
                     "properties": {
                         "value": "[listAccountSas(variables('adlsStorageAccountName'), variables('storageAccountApiVersion'), parameters('adlsStorageAccountSasProperties')).accountSasToken]"
+                    }
+                },
+                {
+                    "type": "secrets",
+                    "apiVersion": "[variables('keyVaultApiVersion')]",
+                    "name": "devopsServicePrincipalCredentials",
+                    "dependsOn": [
+                        "[concat('Microsoft.KeyVault/vaults/', variables('keyVaultName'))]"
+                    ],
+                    "properties": {
+                        "value": "[parameters('devopsServicePrincipalCredentials').client_secret]"
                     }
                 }
             ]
