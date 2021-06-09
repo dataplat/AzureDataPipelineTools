@@ -22,7 +22,7 @@
         },
         "deploymentTimestamp": {
             "type": "string",
-            "defaultValue": "[utcNow()]"
+            "defaultValue": "[utcNow('O')]"
         },
         "devopsServicePrincipalId": {
             "type": "string"
@@ -30,19 +30,32 @@
         "adlsStorageAccountContainerName": {
             "type": "string",
             "defaultValue": "test"
+        },
+        "adlsStorageAccountSasProperties": {
+            "type": "object",
+            "defaultValue": {
+                "signedServices": "b",
+                "signedPermission": "rl",
+                "signedExpiry": "[dateTimeAdd(parameters('deploymentTimestamp'), 'P7D')]",
+                "signedResourceTypes": "c"
+            }
         }
     },
     "variables": {
         "storageAccountApiVersion": "2021-04-01",
         "adlsStorageAccountName": "[concat('adls', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
         "adlsStorageAccountResourceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('adlsStorageAccountName'))]",
-        //"adlsStorageAccountContainerName": "test",
+
+        "keyVaultApiVersion": "2021-04-01-preview",
+        "keyVaultName": "[concat('kv', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
 
         "functionsAppApiVersion": "2015-08-01",
         "functionsAppBlobStorageAccountName": "[concat('funcblob', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
         "functionsAppName": "[concat('func', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
 
         "authorizationApiVersion": "2018-09-01-preview",
+
+        
 
         "owner": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '8e3af657-a8ff-443c-a75c-2fe8c4bcb635')]",
         "contributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
@@ -70,27 +83,25 @@
             }
         },
 
-        // 'Storage Blob Data Reader' scoped to the storage account
-        {
-            "type": "Microsoft.Storage/storageAccounts/providers/roleAssignments",
-            "name": "[concat(variables('adlsStorageAccountName'),'/Microsoft.Authorization/',guid(resourceGroup().id, 'devopsServicePrincipal_adlsStorageAccount_storageBlobDataReader'))]",
-            "apiVersion": "[variables('authorizationApiVersion')]",
-            "properties": {
-                "roleDefinitionId": "[variables('storageBlobDatareader')]",
-                "principalId": "[parameters('devopsServicePrincipalId')]"
-            },
-            "dependsOn": [
-                "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'))]"
-            ]
-        },
+        // // 'Storage Blob Data Reader' scoped to the storage account
+        // {
+        //     "type": "Microsoft.Storage/storageAccounts/providers/roleAssignments",
+        //     "name": "[concat(variables('adlsStorageAccountName'),'/Microsoft.Authorization/',guid(resourceGroup().id, 'devopsServicePrincipal_adlsStorageAccount_storageBlobDataReader'))]",
+        //     "apiVersion": "[variables('authorizationApiVersion')]",
+        //     "properties": {
+        //         "roleDefinitionId": "[variables('storageBlobDatareader')]",
+        //         "principalId": "[parameters('devopsServicePrincipalId')]"
+        //     },
+        //     "dependsOn": [
+        //         "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'))]"
+        //     ]
+        // },
 
         // 'Storage Blob Data Contributor' scoped to the storage account container
         {
             "type": "Microsoft.Storage/storageAccounts/blobServices/containers/providers/roleAssignments",
-            //"name": "[concat(variables('adlsStorageAccountName'), '/default/', parameters('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, 'devopsServicePrincipal_adlsStorageAccountContainer', parameters('adlsStorageAccountContainerName'), 'test_storageBlobDataContributor'))]",
             "name": "[concat(variables('adlsStorageAccountName'), '/default/', parameters('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('devopsServicePrincipalId'), variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDataContributor')))]",
             "apiVersion": "[variables('authorizationApiVersion')]",
-            //"scope": "[concat(resourceGroup().id, '/providers/Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'), '/blobServices/containers/containers/', variables('adlsStorageAccountContainerName'))]",
             "properties": {
                 "roleDefinitionId": "[variables('storageBlobDataContributor')]",
                 "principalId": "[parameters('devopsServicePrincipalId')]"
@@ -166,8 +177,7 @@
                 "Branch": "[parameters('branch')]",
                 "Pull Request": "[parameters('pullRequest')]",
                 "Create Date Time": "[parameters('deploymentTimestamp')]",
-                "Git Project Resource Code": "ADLS",
-                "RG": "[resourceGroup().name]"
+                "Git Project Resource Code": "ADLS"
             },
             "resources": [
                 // Add a container to the storage account
@@ -178,9 +188,88 @@
                     "properties": {
                         "publicAccess": "None"
                     },
+                    "tags": {
+                        "Git Project": "[parameters('gitProject')]",
+                        "Commit": "[parameters('commit')]",
+                        "Branch": "[parameters('branch')]",
+                        "Pull Request": "[parameters('pullRequest')]",
+                        "Create Date Time": "[parameters('deploymentTimestamp')]",
+                        "Git Project Resource Code": "ADLSTestContainer"
+                    },
                     "dependsOn": [
                         "[variables('adlsStorageAccountName')]"
                     ]
+                }
+            ]
+        },
+
+
+
+        /********************************************************************************************************************************************
+        ****    Key Vault
+        ********************************************************************************************************************************************/
+        {
+            "type": "Microsoft.KeyVault/vaults",
+            "apiVersion": "[variables('keyVaultApiVersion')]",
+            "name": "[variables('keyVaultName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "Git Project": "[parameters('gitProject')]",
+                "Commit": "[parameters('commit')]",
+                "Branch": "[parameters('branch')]",
+                "Pull Request": "[parameters('pullRequest')]",
+                "Create Date Time": "[parameters('deploymentTimestamp')]",
+                "Git Project Resource Code": "KeyVault",
+                "Tenant Id": "[subscription().tenantId]"
+            },
+            "dependsOn": [
+                "[variables('adlsStorageAccountName')]",
+                "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'))]",
+                 "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]"
+            ],
+            "properties": {
+                "enabledForDeployment": true,
+                "enabledForTemplateDeployment": true,
+                "enabledForDiskEncryption": true,
+                "tenantId": "[subscription().tenantId]",
+                "accessPolicies": [ 
+                    {
+                        "tenantId": "[subscription().tenantId]",
+                        "objectId": "[parameters('devopsServicePrincipalId')]",
+                        "permissions": {
+                            "secrets": [
+                                "list",
+                                "get"
+                            ]
+                        }
+                    },
+                    {
+                        "tenantId": "[subscription().tenantId]",
+                        "objectId": "[reference(resourceId('Microsoft.Web/sites', variables('functionsAppName')), variables('functionsAppApiVersion'), 'full').identity.principalId]",
+                        "permissions": {
+                            "secrets": [
+                                "list",
+                                "get"
+                            ]
+                        }
+                    }
+                ],
+                "sku": {
+                    "name": "standard",
+                    "family": "A"
+                }
+            },
+            "resources": [
+                {
+                    "type": "secrets",
+                    "apiVersion": "[variables('keyVaultApiVersion')]",
+                    "name": "StorageSaSToken",
+                    "dependsOn": [
+                        "[concat('Microsoft.KeyVault/vaults/', variables('keyVaultName'))]"
+                    ],
+                    "properties": {
+                        "value": "[listAccountSas(variables('adlsStorageAccountName'), variables('storageAccountApiVersion'), parameters('adlsStorageAccountSasProperties')).accountSasToken]"
+                    }
                 }
             ]
         },
