@@ -112,7 +112,7 @@
             ///subscriptions/ee0bd726-cc84-43ef-b846-ed00844a9dec/resourceGroups/AzureDataPipelineTools-CI_Build___feature__azure-devtest-labs-arm-CICD___-559267/providers/Microsoft.Web/sites/func4btzxxxxecb9ee6
             "apiVersion": "[variables('authorizationApiVersion')]",
             "properties": {
-                "roleDefinitionId": "[variables('contributor')]",
+                "roleDefinitionId": "[variables('contributor')]", 
                 "principalId": "[parameters('devopsServicePrincipalId')]"
             },
             "dependsOn": [
@@ -465,9 +465,13 @@
             "type": "string",
             "value": "[reference(resourceId('Microsoft.Web/sites', variables('functionsAppName')), variables('functionsAppApiVersion'), 'full').properties.hostNames[0]]"
         },
-        "functionAppInfo": {
-            "type": "object",
-            "value": "[reference(resourceId('Microsoft.Web/sites', variables('functionsAppName')), variables('functionsAppApiVersion'), 'full')]"
+        "functionsAppKey": {
+            "type": "string",
+            "value": "[listKeys(concat(resourceId('Microsoft.Web/sites', variables('functionsAppName')), '/host/default/'), variables('functionsAppApiVersion')).functionKeys.default]"
         }
+        // "functionAppInfo": {
+        //     "type": "object",
+        //     "value": "[reference(resourceId('Microsoft.Web/sites', variables('functionsAppName')), variables('functionsAppApiVersion'), 'full')]"
+        // }
     }
 }
