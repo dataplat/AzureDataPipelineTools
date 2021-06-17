@@ -1,19 +1,21 @@
 {
     "version": "2.0",
-    "logging": {
-        "applicationInsights": {
-            "samplingSettings": {
-                "isEnabled": true,
-                "excludedTypes": "Request",
-            }
-        },
-      "logLevel": {
-        "default": "Error",
-        "SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake.DataLakeFunctions": "Information",
-        "SqlCollaborative.Azure.DataPipelineTools.Functions.Common.FunctionsBase": "Information",
-        "SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake.DataLakeConfigFactory": "Information",
-        "SqlCollaborative.Azure.DataPipelineTools.DataLake.DataLakeClientFactory": "Information",
-        "SqlCollaborative.Azure.DataPipelineTools.DataLake.DataLakeServiceFactory": "Information"
+  "logging": {
+    "fileLoggingMode": "always",
+    "logLevel": {
+      "default": "Error",
+      "SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake.DataLakeFunctions": "Information",
+      "SqlCollaborative.Azure.DataPipelineTools.Functions.Common.FunctionsBase": "Information",
+      "SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake.DataLakeConfigFactory": "Information",
+      "SqlCollaborative.Azure.DataPipelineTools.DataLake.DataLakeClientFactory": "Information",
+      "SqlCollaborative.Azure.DataPipelineTools.DataLake.DataLakeServiceFactory": "Information"
+    },
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": false,
+        "excludedTypes": "Request",
+        "enableLiveMetrics": true
       }
     }
+  }
 }

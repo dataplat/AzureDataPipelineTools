@@ -70,6 +70,7 @@
         "contributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
         "reader": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')]",
         "userAccessAdministrator": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '18d7d88d-d35e-4fb5-a5c3-7773c20a72d9')]",
+        "websiteContributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'de139f84-1756-47ae-9be6-808fbbe84772')]",
     
 
         "storageBlobDataContributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
@@ -122,6 +123,24 @@
                 "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]"
             ]
         },
+
+        // 'Website Contributor' scoped to the application insights to allow code deployments
+        {
+            "type": "microsoft.insights/components/providers/roleAssignments",
+            "name": "[concat(variables('applicationInsightsName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('devopsServicePrincipalId'), variables('websiteContributor')))]",
+            ///subscriptions/ee0bd726-cc84-43ef-b846-ed00844a9dec/resourceGroups/AzureDataPipelineTools-CI_Build___feature__azure-devtest-labs-arm-CICD___-559267/providers/Microsoft.Web/sites/func4btzxxxxecb9ee6
+            "apiVersion": "[variables('authorizationApiVersion')]",
+            "properties": {
+                "roleDefinitionId": "[variables('websiteContributor')]", 
+                "principalId": "[parameters('devopsServicePrincipalId')]"
+            },
+            "dependsOn": [
+                "[resourceId('microsoft.insights/components', variables('applicationInsightsName'))]"
+            ]
+        },
+
+
+
 
 
         // Add IAM access for functions app. See the following page for details of how to get the object id for the SPN
@@ -400,6 +419,14 @@
                             "name": "AzureWebJobsStorage",
                             "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('functionsAppBlobStorageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('functionsAppBlobStorageAccountName')), variables('storageAccountApiVersion')).keys[0].value,';EndpointSuffix=','core.windows.net')]"
                         },
+                        {
+                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('functionsAppBlobStorageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('functionsAppBlobStorageAccountName')), variables('storageAccountApiVersion')).keys[0].value,';EndpointSuffix=','core.windows.net')]"
+                        },
+                        // {
+                        //     "name": "WEBSITE_CONTENTSHARE",
+                        //     "value": "[concat('edi-', parameters('webApps')[copyIndex()].name, '-', parameters('env'), '-app')]"
+                        // },
                         {
                             "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
                             "value": "[reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), variables('applicationInsightsApiVersion')).InstrumentationKey]"
