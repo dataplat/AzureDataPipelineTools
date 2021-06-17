@@ -2,18 +2,18 @@
     "version": "2.0",
     "logging": {
         "applicationInsights": {
-            "samplingExcludedTypes": "Request",
             "samplingSettings": {
-                "isEnabled": true
+                "isEnabled": true,
+                "excludedTypes": "Request",
             }
         },
       "logLevel": {
-        "default":  "Error" ,
-        "SqlCollaborative.Azure.DataPipelineTools.Functions.DataLakeFunctions": "Information",
-        "SqlCollaborative.Azure.DataPipelineTools.Functions.FunctionsBase": "Information",
-        "SqlCollaborative.Azure.DataPipelineTools.Functions.DataLakeConfigFactory": "Information",
+        "default": "Error",
+        "SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake.DataLakeFunctions": "Information",
+        "SqlCollaborative.Azure.DataPipelineTools.Functions.Common.FunctionsBase": "Information",
+        "SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake.DataLakeConfigFactory": "Information",
         "SqlCollaborative.Azure.DataPipelineTools.DataLake.DataLakeClientFactory": "Information",
-        "SqlCollaborative.Azure.DataPipelineTools.DataLake.DataLakeControllerFactory": "Information"
+        "SqlCollaborative.Azure.DataPipelineTools.DataLake.DataLakeServiceFactory": "Information"
       }
     }
 }
