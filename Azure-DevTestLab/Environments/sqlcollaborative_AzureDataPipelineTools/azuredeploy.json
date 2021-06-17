@@ -52,6 +52,9 @@
         "keyVaultApiVersion": "2021-04-01-preview",
         "keyVaultName": "[concat('kv', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
 
+        "applicationInsightsApiVersion": "2020-02-02-preview",
+        "applicationInsightsName": "[concat('appinsights', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
+
         "functionsAppApiVersion": "2015-08-01",
         "functionsAppBlobStorageAccountName": "[concat('funcblob', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
         "functionsAppName": "[concat('func', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
@@ -310,6 +313,28 @@
             ]
         },
 
+        /********************************************************************************************************************************************
+        ****    Application Insights (for functions app logging)
+        ********************************************************************************************************************************************/
+        {
+            "name": "[variables('applicationInsightsName')]",
+            "type": "microsoft.insights/components",
+            "apiVersion": "[variables('applicationInsightsApiVersion')]",
+            "location": "[parameters('location')]",
+            "tags": {
+                "Git Project": "[parameters('gitProject')]",
+                "Commit": "[parameters('commit')]",
+                "Branch": "[parameters('branch')]",
+                "Pull Request": "[parameters('pullRequest')]",
+                "Create Date Time": "[parameters('deploymentTimestamp')]",
+                "Git Project Resource Code": "ApplicationInsights"
+            },
+            "properties": {
+                "ApplicationId": "[variables('applicationInsightsName')]",
+                "Application_Type": "web",
+                "Flow_Type": "Redfield"
+            }
+        },
 
         /********************************************************************************************************************************************
         ****    Functions Apps
@@ -349,7 +374,8 @@
                 "type": "SystemAssigned"
             },
             "dependsOn": [
-                "[resourceId('Microsoft.Storage/storageAccounts', variables('functionsAppBlobStorageAccountName'))]"
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('functionsAppBlobStorageAccountName'))]",
+                "[resourceId('microsoft.insights/components', variables('applicationInsightsName'))]"
             ],
             "tags": {
                 "Git Project": "[parameters('gitProject')]",
@@ -373,6 +399,14 @@
                         {
                             "name": "AzureWebJobsStorage",
                             "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('functionsAppBlobStorageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('functionsAppBlobStorageAccountName')), variables('storageAccountApiVersion')).keys[0].value,';EndpointSuffix=','core.windows.net')]"
+                        },
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), variables('applicationInsightsApiVersion')).InstrumentationKey]"
+                        },
+                        {
+                            "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                            "value": "[reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), variables('applicationInsightsApiVersion')).ConnectionString]"
                         }
                     ]
                 }
@@ -468,6 +502,10 @@
         "functionsAppKey": {
             "type": "string",
             "value": "[listKeys(concat(resourceId('Microsoft.Web/sites', variables('functionsAppName')), '/host/default/'), variables('functionsAppApiVersion')).functionKeys.default]"
+        },
+        "applicationInsightsInfo": {
+            "type": "object",
+            "value": "[reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), variables('applicationInsightsApiVersion'), 'full')]"
         }
         // "functionAppInfo": {
         //     "type": "object",

@@ -51,7 +51,7 @@ jobs:
       run: |
         ls -ltAR ./${{ env.FUNCTIONS_PROJECT_NAME }}/bin/${{ env.BUILD_CONFIGURATION }}
 
-    - name: Test
+    - name: Run Unit Tests
       run: dotnet test --no-build --configuration ${{ env.BUILD_CONFIGURATION }} --output ./output --verbosity normal
 
     # - name: Extract 
@@ -118,7 +118,7 @@ jobs:
             | jq '.' > "$PARAMETERS_FILE"
           #cat $PARAMETERS_FILE
 
-          ENVIRONMENT_INSTANCE_NAME='CI_Build___'"${BRANCH_NAME////__}"'___('"${GITHUB_SHA:0:8}"')'
+          ENVIRONMENT_INSTANCE_NAME='CI_Build___'"${BRANCH_NAME////__}"'___'"${GITHUB_SHA:0:8}"''
           echo "Environment Instance Name: $ENVIRONMENT_INSTANCE_NAME"
           
           echo "::set-output name=ENVIRONMENT_INSTANCE_NAME::$ENVIRONMENT_INSTANCE_NAME"
