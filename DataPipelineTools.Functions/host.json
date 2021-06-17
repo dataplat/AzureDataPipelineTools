@@ -13,7 +13,6 @@
     "applicationInsights": {
       "samplingSettings": {
         "isEnabled": false,
-        "excludedTypes": "Request",
         "enableLiveMetrics": true
       }
     }
