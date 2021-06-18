@@ -35,7 +35,6 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
 
             var userAgentKey = req.Headers.Keys.FirstOrDefault(k => k.ToLower() == "user-agent" || k.ToLower() == "useragent");
             _logger.LogInformation($"C# HTTP trigger function processed a request [User Agent: { (userAgentKey == null ? "Unknown" : req.Headers[userAgentKey].ToString()) }].");
-
             try
             {
                 var dataLakeConfig = _configFactory.GetDataLakeConfig(req);
@@ -59,7 +58,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             }
             catch (ArgumentException ex)
             {
-                _logger.LogError(ex.Message);
+                _logger.LogError(ex, ex.Message);
                 return new BadRequestObjectResult(ex.Message);
             }
             catch (Exception ex)
