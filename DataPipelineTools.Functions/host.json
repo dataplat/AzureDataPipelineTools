@@ -3,7 +3,7 @@
   "logging": {
     "fileLoggingMode": "always",
     "logLevel": {
-      "default": "Error",
+      "default": "Information",
       "SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake.DataLakeFunctions": "Information",
       "SqlCollaborative.Azure.DataPipelineTools.Functions.Common.FunctionsBase": "Information",
       "SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake.DataLakeConfigFactory": "Information",
@@ -12,8 +12,7 @@
     },
     "applicationInsights": {
       "samplingSettings": {
-        "isEnabled": false,
-        "enableLiveMetrics": true
+        "isEnabled": true
       }
     }
   }
