@@ -63,7 +63,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.ToString());
+                _logger.LogError(ex, ex.Message); // The simple message goes in the trace, but the full exception details are in the exception logging in Application Insights
                 return new BadRequestObjectResult("An error occurred, see the Azure Function logs for more details");
             }
         }
@@ -111,7 +111,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.ToString());
+                _logger.LogError(ex, ex.Message); // The simple message goes in the trace, but the full exception details are in the exception logging in Application Insights
                 return new BadRequestObjectResult("An error occurred, see the Azure Function logs for more details");
             }
         }
