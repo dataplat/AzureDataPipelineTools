@@ -5,8 +5,8 @@
     "logLevel": {
       "default": "Error",
       "Host.Results": "Information",
-      "Function.DataLakeGetItems": "Information",
-      "Function.DataLakeCheckPathCase": "Information"
+      "Function": "Information",
+      "SqlCollaborative.Azure.DataPipelineTools": "Information"
     },
     "applicationInsights": {
       "samplingSettings": {

@@ -43,8 +43,8 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
                 if (string.IsNullOrWhiteSpace(dataLakeConfig.AccountUri))
                     throw new ArgumentException($"Parameter 'accountUri' with value '{dataLakeConfig.AccountUri}' not found. Check the URI is correct.");
 
-                if (getItemsConfig.Directory == null)
-                    throw new ArgumentException($"Parameter 'directory' is required.");
+                //if (getItemsConfig.Directory == null)
+                //    throw new ArgumentException($"Parameter 'directory' is required.");
 
                 var client = _clientFactory.GetDataLakeClient(dataLakeConfig);
                 var controller = _serviceFactory.CreateDataLakeService(client);
