@@ -4,6 +4,7 @@ using SqlCollaborative.Azure.DataPipelineTools.DataLake.Model;
 namespace DataPipelineTools.Tests.DataLake.Model
 {
     [TestFixture]
+    [Category(nameof(TestType.UnitTest))]
     public class DataLakeConfigTests
     {
         private const string AccountUri = "mydatalake";

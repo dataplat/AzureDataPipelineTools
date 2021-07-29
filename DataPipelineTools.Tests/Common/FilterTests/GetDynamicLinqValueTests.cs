@@ -5,6 +5,7 @@ using SqlCollaborative.Azure.DataPipelineTools.Common;
 namespace DataPipelineTools.Tests.Common.FilterTests
 {
     [TestFixture]
+    [Category(nameof(TestType.UnitTest))]
     public class GetDynamicLinqValueTests : TestBase
     {
         [SetUp]

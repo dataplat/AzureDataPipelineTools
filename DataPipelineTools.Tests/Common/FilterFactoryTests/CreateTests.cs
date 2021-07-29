@@ -1,17 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using Castle.Core.Logging;
+﻿using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;
-using NUnit.Framework.Constraints;
 using SqlCollaborative.Azure.DataPipelineTools.Common;
-using SqlCollaborative.Azure.DataPipelineTools.DataLake;
 
 namespace DataPipelineTools.Tests.Common.FilterFactoryTests
 {
     [TestFixture]
+    [Category(nameof(TestType.UnitTest))]
     public class CreateTests : TestBase<FilterFactory<TestPoco>>
     {
         [SetUp]

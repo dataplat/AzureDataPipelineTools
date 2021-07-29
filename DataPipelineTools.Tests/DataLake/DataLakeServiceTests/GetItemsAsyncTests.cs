@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Extensions.Logging;
 using Moq;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using SqlCollaborative.Azure.DataPipelineTools.Common;
 using SqlCollaborative.Azure.DataPipelineTools.DataLake;
@@ -13,6 +9,7 @@ using SqlCollaborative.Azure.DataPipelineTools.DataLake.Model;
 namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
 {
     [TestFixture]
+    [Category(nameof(TestType.UnitTest))]
     public class GetItemsAsyncTests : DataLakeTestBase
     {
 

@@ -6,6 +6,7 @@ using SqlCollaborative.Azure.DataPipelineTools.DataLake;
 namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
 {
     [TestFixture]
+    [Category(nameof(TestType.UnitTest))]
     public class CheckPathAsyncTests: DataLakeTestBase
     {
 
