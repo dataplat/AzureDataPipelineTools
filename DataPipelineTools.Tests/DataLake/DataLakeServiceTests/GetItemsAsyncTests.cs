@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using DataPipelineTools.Tests.Common;
 using Moq;
 using NUnit.Framework;
 using SqlCollaborative.Azure.DataPipelineTools.Common;

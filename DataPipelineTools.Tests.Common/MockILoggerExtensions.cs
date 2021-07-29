@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 
-namespace DataPipelineTools.Tests
+namespace DataPipelineTools.Tests.Common
 {
     // Based once code / ideas here: https://adamstorr.azurewebsites.net/blog/mocking-ilogger-with-moq
     public static class MockILoggerExtensions
