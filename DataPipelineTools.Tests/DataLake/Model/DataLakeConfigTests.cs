@@ -1,3 +1,4 @@
+using DataPipelineTools.Tests.Common;
 using NUnit.Framework;
 using SqlCollaborative.Azure.DataPipelineTools.DataLake.Model;
 

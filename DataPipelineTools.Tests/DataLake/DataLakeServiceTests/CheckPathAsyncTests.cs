@@ -1,4 +1,5 @@
 ﻿using System;
+using DataPipelineTools.Tests.Common;
 using Moq;
 using NUnit.Framework;
 using SqlCollaborative.Azure.DataPipelineTools.DataLake;

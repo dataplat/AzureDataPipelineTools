@@ -1,4 +1,4 @@
-﻿namespace DataPipelineTools.Tests
+﻿namespace DataPipelineTools.Tests.Common
 {
     public enum TestType
     {

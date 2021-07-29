@@ -52,7 +52,7 @@ jobs:
         ls -ltAR ./${{ env.FUNCTIONS_PROJECT_NAME }}/bin/${{ env.BUILD_CONFIGURATION }}
 
     - name: Run Unit Tests
-      run: dotnet test --no-build --configuration ${{ env.BUILD_CONFIGURATION }} --output ./output --verbosity normal
+      run: dotnet test --no-build --configuration ${{ env.BUILD_CONFIGURATION }} --filter TestCategory=UnitTest --output ./output --verbosity normal
 
     # - name: Extract 
     #   run: |

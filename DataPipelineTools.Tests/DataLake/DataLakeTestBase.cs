@@ -6,6 +6,7 @@ using System.Threading;
 using Azure;
 using Azure.Storage.Files.DataLake;
 using Azure.Storage.Files.DataLake.Models;
+using DataPipelineTools.Tests.Common;
 using Moq;
 using SqlCollaborative.Azure.DataPipelineTools.DataLake;
 
