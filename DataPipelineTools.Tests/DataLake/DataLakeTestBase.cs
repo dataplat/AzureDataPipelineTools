@@ -6,11 +6,10 @@ using System.Threading;
 using Azure;
 using Azure.Storage.Files.DataLake;
 using Azure.Storage.Files.DataLake.Models;
-using Microsoft.Extensions.Logging;
 using Moq;
 using SqlCollaborative.Azure.DataPipelineTools.DataLake;
 
-namespace DataPipelineTools.Tests.DataLake
+namespace DataPipelineTools.Tests.DataLake 
 {
     /// <summary>
     /// Base class for tests that need to mock the DataLakeFileSystemClient classes
@@ -23,7 +22,6 @@ namespace DataPipelineTools.Tests.DataLake
         protected readonly IEnumerable<PathItem> TestData;
 
         protected readonly Mock<DataLakeFileSystemClient> MockFileSystemClient;
-
 
         public DataLakeTestBase()
         {
