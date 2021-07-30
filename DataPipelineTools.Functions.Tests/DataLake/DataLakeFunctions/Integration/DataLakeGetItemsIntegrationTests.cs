@@ -1,13 +1,12 @@
-using DataPipelineTools.Tests;
 using DataPipelineTools.Tests.Common;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 
-namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions
+namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integration
 {
     [TestFixture]
     [Category(nameof(TestType.IntegrationTest))]
-    public class DataLakeGetItemsTests: FunctionsTestBase
+    public class DataLakeGetItemsIntegrationTests: IntegrationTestBase
     {
         [SetUp]
         public void Setup()

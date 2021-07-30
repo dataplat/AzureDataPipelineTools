@@ -8,13 +8,8 @@ namespace DataPipelineTools.Functions.Tests
     /// <summary>
     /// Base class for functions tests. Exposes the 
     /// </summary>
-    public abstract class FunctionsTestBase : TestBase
+    public abstract class IntegrationTestBase : TestBase
     {
-        public FunctionsTestBase()
-        {
-
-        }
-
         protected bool IsRunningOnCIServer
         {
             get
