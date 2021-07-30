@@ -7,7 +7,7 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions
 {
     [TestFixture]
     [Category(nameof(TestType.IntegrationTest))]
-    public class DataLakeGetItemsTests: TestBase
+    public class DataLakeGetItemsTests: FunctionsTestBase
     {
         [SetUp]
         public void Setup()
@@ -18,7 +18,10 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions
         [Test]
         public void Test1()
         {
-            base.Logger.LogError("Integration tests not implemented yet.");
+            Logger.LogInformation($"Running tests in { (IsRunningOnCIServer ? "CI": "local") } environment");
+
+
+            Logger.LogError("Integration tests not implemented yet.");
             Assert.Fail();
         }
     }
