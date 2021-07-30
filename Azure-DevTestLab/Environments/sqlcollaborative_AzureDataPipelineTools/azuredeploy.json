@@ -504,7 +504,7 @@
     ********************************************************************************************************************************************/
         
     "outputs": {
-         "storageAccountName": {
+        "storageAccountName": {
             "type": "string",
             "value": "[variables('adlsStorageAccountName')]"
         },
@@ -512,10 +512,10 @@
             "type": "string",
             "value": "[variables('keyVaultName')]"
         },
-        "storageAccountConnectionString": {
-            "type": "string",
-            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('adlsStorageAccountName'), ';AccountKey=', listKeys(variables('adlsStorageAccountResourceId'), variables('storageAccountApiVersion')).keys[0].value)]"
-        },
+        // "storageAccountConnectionString": {
+        //     "type": "string",
+        //     "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('adlsStorageAccountName'), ';AccountKey=', listKeys(variables('adlsStorageAccountResourceId'), variables('storageAccountApiVersion')).keys[0].value)]"
+        // },
         "functionsAppName": {
             "type": "string",
             "value": "[variables('functionsAppName')]"
@@ -533,10 +533,26 @@
         "applicationInsightsInfo": {
             "type": "object",
             "value": "[reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), variables('applicationInsightsApiVersion'), 'full')]"
-        }
+        },
         // "functionAppInfo": {
         //     "type": "object",
         //     "value": "[reference(resourceId('Microsoft.Web/sites', variables('functionsAppName')), variables('functionsAppApiVersion'), 'full')]"
         // }
+        // "adlsStorageAccountInfo": {
+        //     "type": "object",
+        //     "value": "[reference(variables('adlsStorageAccountResourceId'), variables('storageAccountApiVersion'), 'full')]"
+        // },
+        
+
+        "storageAccountKey": {
+            "type": "string",
+            "value": "[listKeys(variables('adlsStorageAccountResourceId'), variables('storageAccountApiVersion')).keys[0].value]"
+        },
+        "storageAccountContainerSasKey": {
+            "type": "string",
+            "value": "[listAccountSas(variables('adlsStorageAccountName'), variables('storageAccountApiVersion'), parameters('adlsStorageAccountSasProperties')).accountSasToken]"
+        }
+
+        
     }
 }
