@@ -29,7 +29,7 @@
     <!--Parameter name="FunctionsUrl" value="http://localhost:7071/api/HttpTrigger" /-->
 
     <!-- The key to authorise calls to the functions app. Only required if the emulator flag (UseFunctionsEmulator) above is false. -->
-    <Parameter name="StorageAccountName" value="testadlsaccount" />
+    <Parameter name="FunctionsAppKey" value="" />
 
     <!-- The name of the storage account -->
     <Parameter name="StorageAccountName" value="testadlsaccount" />
