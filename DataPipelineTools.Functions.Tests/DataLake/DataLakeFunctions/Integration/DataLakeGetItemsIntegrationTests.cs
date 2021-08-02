@@ -8,20 +8,21 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
     [Category(nameof(TestType.IntegrationTest))]
     public class DataLakeGetItemsIntegrationTests: IntegrationTestBase
     {
+
+
         [SetUp]
         public void Setup()
         {
-            
+            Logger.LogInformation($"Running tests in { (IsRunningOnCIServer ? "CI" : "local") } environment");
+            Logger.LogInformation($"TestContext.Parameters.Count: { TestContext.Parameters.Count }");
         }
 
-        [Test]
-        public void Test1()
-        {
-            Logger.LogInformation($"Running tests in { (IsRunningOnCIServer ? "CI": "local") } environment");
+        //[Test]
+        //public void Test_RunSettingsLoadedOk()
+        //{
+        //    Assert.
 
-
-            Logger.LogError("Integration tests not implemented yet.");
-            Assert.Fail();
-        }
+        //    //Assert.Fail("Integration tests not implemented yet.");
+        //}
     }
 }
