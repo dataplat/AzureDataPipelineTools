@@ -551,8 +551,21 @@
         "storageAccountContainerSasKey": {
             "type": "string",
             "value": "[listAccountSas(variables('adlsStorageAccountName'), variables('storageAccountApiVersion'), parameters('adlsStorageAccountSasProperties')).accountSasToken]"
-        }
+        },
 
-        
+
+
+        "runSettings": {
+            "type": "string",
+            "value": "[
+                concat('<?xml version=\"1.0\" encoding=\"utf-8\"?>',
+                       '<RunSettings>',
+                       '  <TestRunParameters>',
+                       '    <Parameter name=\"UseFunctionsEmulator\" value=\"true\" />',
+                       '  </TestRunParameters>',
+                       '</RunSettings>'
+                      )
+                ]"
+        }
     }
 }
