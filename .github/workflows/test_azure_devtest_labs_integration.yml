@@ -74,7 +74,8 @@ jobs:
       id: create-devtest-labs-environment
       uses: azure/CLI@v1
       with:
-        #azcliversion: 2.24.0  # Versions prior to this have a bug creating environments
+        # azcliversion: 2.24.0  # Versions prior to this have a bug creating environments
+        # This runs in a container, so all output is passed back using 'echo "::set-output name=OUTPUT_VAR_NAME::value here"', as files created won't persist.
         inlineScript: |
           echo "========================================================================================================================================================================================================"
           echo "Azure CLI Version: $(az version |  jq '."azure-cli"')"
@@ -162,6 +163,7 @@ jobs:
           echo "::set-output name=FUNCTIONS_APP_URI::$(echo $DEPLOYMENTOUTPUT | jq --raw-output '.functionsAppUri.value')"
           echo "::set-output name=KEY_VAULT_NAME::$(echo $DEPLOYMENTOUTPUT | jq --raw-output '.keyVaultName.value')"
           echo "::set-output name=FUNCTIONS_APP_KEY::$(echo $DEPLOYMENTOUTPUT | jq --raw-output '.functionsAppKey.value')"
+          echo "::set-output name=RUN_SETTINGS::$(echo $DEPLOYMENTOUTPUT | jq --raw-output '.runSettings.value')"
 
           echo "========================================================================================================================================================================================================"
     
@@ -178,6 +180,14 @@ jobs:
         echo "STORAGE_ACCOUNTCONNECTION_STRING:         ${{ steps.create-devtest-labs-environment.outputs.STORAGE_ACCOUNTCONNECTION_STRING }}"
         echo "STORAGE_ACCOUNT_NAME:                     ${{ steps.create-devtest-labs-environment.outputs.STORAGE_ACCOUNT_NAME }}"
         echo "KEY_VAULT_NAME:                           ${{ steps.create-devtest-labs-environment.outputs.KEY_VAULT_NAME }}"
+        echo "RUN_SETTINGS:                           ${{ steps.create-devtest-labs-environment.outputs.RUN_SETTINGS }}"
+    
+    
+    # Write the runsettings output from the ARM script into a file so that the integration tests can use it
+    - name: Show create environment outputs
+      run: |    
+        echo "${{ steps.create-devtest-labs-environment.outputs.RUN_SETTINGS }}" > ./integrationTest.runsettings
+
 # echo "ENVIRONMENT_INSTANCE_RESOURCES: ${{ steps.get-devtest-labs-environment-resources.outputs.ENVIRONMENT_INSTANCE_RESOURCES }}"
 # az lab arm-template show --resource-group $RESOURCE_GROUP
 

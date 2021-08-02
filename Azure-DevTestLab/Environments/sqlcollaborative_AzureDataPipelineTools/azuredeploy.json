@@ -51,6 +51,10 @@
 
         "keyVaultApiVersion": "2021-04-01-preview",
         "keyVaultName": "[concat('kv', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
+        "keyVaultSecret_ServicePrincipalClientSecret": "devopsServicePrincipalClientSecret",
+        "keyVaultSecret_StorageSaSToken": "StorageSaSToken",
+        "keyVaultSecret_StorageKey": "StorageKey",
+        "keyVaultSecret_functionsKey": "functionsKey",
 
         "applicationInsightsApiVersion": "2020-02-02-preview",
         "applicationInsightsName": "[concat('appinsights', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
@@ -297,7 +301,7 @@
                 {
                     "type": "secrets",
                     "apiVersion": "[variables('keyVaultApiVersion')]",
-                    "name": "StorageSaSToken",
+                    "name": "[variables('keyVaultSecret_StorageSaSToken')]",
                     "dependsOn": [
                         "[concat('Microsoft.KeyVault/vaults/', variables('keyVaultName'))]",
                         "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'))]"
@@ -309,7 +313,7 @@
                 {
                     "type": "secrets",
                     "apiVersion": "[variables('keyVaultApiVersion')]",
-                    "name": "devopsServicePrincipalClientSecret",
+                    "name": "[variables('keyVaultSecret_ServicePrincipalClientSecret')]",
                     "dependsOn": [
                         "[concat('Microsoft.KeyVault/vaults/', variables('keyVaultName'))]"
                     ],
@@ -320,7 +324,7 @@
                 {
                     "type": "secrets",
                     "apiVersion": "[variables('keyVaultApiVersion')]",
-                    "name": "functionsKey",
+                    "name": "[variables('keyVaultSecret_functionsKey')]",
                     "dependsOn": [
                         "[concat('Microsoft.KeyVault/vaults/', variables('keyVaultName'))]",
                         "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]"
@@ -328,7 +332,23 @@
                     "properties": {
                         "value": "[listKeys(concat(resourceId('Microsoft.Web/sites', variables('functionsAppName')), '/host/default/'), variables('functionsAppApiVersion')).functionKeys.default]"
                     }
+                },
+                {
+                    "type": "secrets",
+                    "apiVersion": "[variables('keyVaultApiVersion')]",
+                    "name": "[variables('keyVaultSecret_StorageKey')]",
+                    "dependsOn": [
+                        "[concat('Microsoft.KeyVault/vaults/', variables('keyVaultName'))]",
+                        "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]"
+                    ],
+                    "properties": {
+                        "value": "[listKeys(variables('adlsStorageAccountResourceId'), variables('storageAccountApiVersion')).keys[0].value]"
+                    }
                 }
+                
+                
+                
+                
             ]
         },
 
@@ -551,8 +571,38 @@
         "storageAccountContainerSasKey": {
             "type": "string",
             "value": "[listAccountSas(variables('adlsStorageAccountName'), variables('storageAccountApiVersion'), parameters('adlsStorageAccountSasProperties')).accountSasToken]"
-        }
+        },
 
-        
+
+
+        "runSettings": {
+            "type": "string",
+            "value": "[
+                concat('<?xml version=\"1.0\" encoding=\"utf-8\"?>',
+                       '<RunSettings>',
+                       '  <TestRunParameters>',
+                       '    <Parameter name=\"UseFunctionsEmulator\" value=\"true\" />',
+                       '    <Parameter name=\"FunctionsAppName\" value=\"', variables('functionsAppName'), '\" />',
+                       '    <Parameter name=\"FunctionsAppUrl\" value=\"', reference(resourceId('Microsoft.Web/sites', variables('functionsAppName')), variables('functionsAppApiVersion'), 'full').properties.hostNames[0], '\" />',
+                       '    <Parameter name=\"FunctionsAppKey\" value=\"', listKeys(concat(resourceId('Microsoft.Web/sites', variables('functionsAppName')), '/host/default/'), variables('functionsAppApiVersion')).functionKeys.default, '\" />',
+                       '    <Parameter name=\"FunctionsAppKeyName\" value=\"', variables('keyVaultSecret_functionsKey'), '\" />',
+                       '    <Parameter name=\"StorageAccountName\" value=\"', variables('adlsStorageAccountName'), '\" />',
+                       '    <Parameter name=\"StorageContainerName\" value=\"', parameters('adlsStorageAccountContainerName'), '\" />',
+                       '    <Parameter name=\"KeyVaultName\" value=\"', variables('keyVaultName'), '\" />',
+                       '    <Parameter name=\"ServicePrincipalName\" value=\"', parameters('devopsServicePrincipalCredentials').client_id, '\" />',
+                       '    <Parameter name=\"ServicePrincipalSecret\" value=\"', parameters('devopsServicePrincipalCredentials').client_secret, '\" />',
+                       '    <Parameter name=\"ServicePrincipalNameKeyName\" value=\"', variables('keyVaultSecret_ServicePrincipalClientSecret'), '\" />',
+                       '    <Parameter name=\"StorageContainerSasToken\" value=\"', replace(listAccountSas(variables('adlsStorageAccountName'), variables('storageAccountApiVersion'), parameters('adlsStorageAccountSasProperties')).accountSasToken, '&', '&amp;'), '\" />',
+                       '    <Parameter name=\"StorageContainerSasTokenKeyName\" value=\"', variables('keyVaultSecret_StorageSaSToken'), '\" />',
+                       '    <Parameter name=\"StorageAccountAccessKey\" value=\"', listKeys(variables('adlsStorageAccountResourceId'), variables('storageAccountApiVersion')).keys[0].value, '\" />',
+                       '    <Parameter name=\"StorageAccountAccessKeyKeyName\" value=\"', variables('keyVaultSecret_StorageKey'), '\" />',
+                       '  </TestRunParameters>',
+                       '</RunSettings>'
+                      )
+                ]"
+        }
     }
 }
+
+
+
