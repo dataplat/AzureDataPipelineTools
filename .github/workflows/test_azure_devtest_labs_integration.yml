@@ -28,6 +28,7 @@ jobs:
       ARM_TEMPLATE_NAME: sqlcollaborative_AzureDataPipelineTools
       FUNCTIONS_PROJECT_NAME: DataPipelineTools.Functions
       BUILD_CONFIGURATION: Release
+      RUN_SETTINGS_FILENAME: ./integrationTest.runsettings
 
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -180,14 +181,13 @@ jobs:
         echo "STORAGE_ACCOUNTCONNECTION_STRING:         ${{ steps.create-devtest-labs-environment.outputs.STORAGE_ACCOUNTCONNECTION_STRING }}"
         echo "STORAGE_ACCOUNT_NAME:                     ${{ steps.create-devtest-labs-environment.outputs.STORAGE_ACCOUNT_NAME }}"
         echo "KEY_VAULT_NAME:                           ${{ steps.create-devtest-labs-environment.outputs.KEY_VAULT_NAME }}"
-        echo "RUN_SETTINGS:                           ${{ steps.create-devtest-labs-environment.outputs.RUN_SETTINGS }}"
+        echo 'RUN_SETTINGS:                             ${{ steps.create-devtest-labs-environment.outputs.RUN_SETTINGS }}'
     
     
     # Write the runsettings output from the ARM script into a file so that the integration tests can use it
-    - name: Show create environment outputs
+    - name: Write the DevTest Labs output runsettings to file
       run: |    
-        echo "${{ steps.create-devtest-labs-environment.outputs.RUN_SETTINGS }}" > ./integrationTest.runsettings
-
+        echo '${{ steps.create-devtest-labs-environment.outputs.RUN_SETTINGS }}' > ${{ env.RUN_SETTINGS_FILENAME }}
 # echo "ENVIRONMENT_INSTANCE_RESOURCES: ${{ steps.get-devtest-labs-environment-resources.outputs.ENVIRONMENT_INSTANCE_RESOURCES }}"
 # az lab arm-template show --resource-group $RESOURCE_GROUP
 
@@ -240,6 +240,11 @@ jobs:
       with:
         app-name: ${{ steps.create-devtest-labs-environment.outputs.FUNCTIONS_APP_NAME }}
         package: './${{ env.FUNCTIONS_PROJECT_NAME }}/bin/${{ env.BUILD_CONFIGURATION }}'
+
+
+    - name: Run Integration Tests
+      run: dotnet test --no-build --configuration ${{ env.BUILD_CONFIGURATION }} --filter TestCategory=IntegrationTest --output ./output --verbosity normal --settings ${{ env.RUN_SETTINGS_FILENAME }}
+
 
 
     
