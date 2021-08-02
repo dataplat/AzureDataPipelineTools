@@ -593,7 +593,7 @@
                        '    <Parameter name=\"ServicePrincipalSecret\" value=\"', parameters('devopsServicePrincipalCredentials').client_secret, '\" />',
                        '    <Parameter name=\"ServicePrincipalNameKeyName\" value=\"', variables('keyVaultSecret_ServicePrincipalClientSecret'), '\" />',
                        '    <Parameter name=\"StorageContainerSasToken\" value=\"', listAccountSas(variables('adlsStorageAccountName'), variables('storageAccountApiVersion'), parameters('adlsStorageAccountSasProperties')).accountSasToken, '\" />',
-                       '    <Parameter name=\"StorageContainerSasTokenKeyName\" value=\"', variables('keyVaultSecret_StorageSaSToken') '\" />',
+                       '    <Parameter name=\"StorageContainerSasTokenKeyName\" value=\"', variables('keyVaultSecret_StorageSaSToken'), '\" />',
                        '    <Parameter name=\"StorageAccountAccessKey\" value=\"', listKeys(variables('adlsStorageAccountResourceId'), variables('storageAccountApiVersion')).keys[0].value, '\" />',
                        '    <Parameter name=\"StorageAccountAccessKeyKeyName\" value=\"', variables('keyVaultSecret_StorageKey'), '\" />',
                        '  </TestRunParameters>',
