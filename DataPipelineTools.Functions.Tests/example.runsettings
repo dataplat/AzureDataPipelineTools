@@ -47,7 +47,7 @@
     <Parameter name="ServicePrincipalSecret" value="" />
 
     <!-- The name of the Azure Key Vault secret holding the secret/password for the Service Principal -->
-    <Parameter name="ServicePrincipalNameKeyName" value="" />
+    <Parameter name="ServicePrincipalSecretKeyName" value="" />
 
     <!-- The SAS token. This needs to be escaped for XML when you copy it from the Azure portal (it should only be the & sign that is an issue) -->
     <Parameter name="SasToken" value="sp=r&amp;st=2021-07-01T13:16:28Z&amp;se=2021-07-01T21:16:28Z&amp;spr=https&amp;sv=2020-08-04&amp;sr=c&amp;sig=lUXpUl0u6kV1hrnIyQtIztOWIGfvmO56Nred4qP5dK8%3D" />
