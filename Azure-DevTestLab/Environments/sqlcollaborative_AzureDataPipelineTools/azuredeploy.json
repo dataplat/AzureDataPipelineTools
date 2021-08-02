@@ -563,6 +563,10 @@
                        '  <TestRunParameters>',
                        '    <Parameter name=\"UseFunctionsEmulator\" value=\"true\" />',
                        '    <Parameter name=\"FunctionsAppName\" value=\"', variables('functionsAppName'), '\" />',
+                       '    <Parameter name=\"FunctionsAppUrl\" value=\"', reference(resourceId('Microsoft.Web/sites', variables('functionsAppName')), variables('functionsAppApiVersion'), 'full').properties.hostNames[0]', '\" />',
+                       '    <Parameter name=\"FunctionsAppKey\" value=\"', listKeys(concat(resourceId('Microsoft.Web/sites', variables('functionsAppName')), '/host/default/'), variables('functionsAppApiVersion')).functionKeys.default, '\" />',
+                       '    <Parameter name=\"StorageAccountName\" value=\"', variables('adlsStorageAccountName'), '\" />',
+                       '    <Parameter name=\"StorageContainerName\" value=\"', parameters('adlsStorageAccountContainerName'), '\" />',
                        '  </TestRunParameters>',
                        '</RunSettings>'
                       )
