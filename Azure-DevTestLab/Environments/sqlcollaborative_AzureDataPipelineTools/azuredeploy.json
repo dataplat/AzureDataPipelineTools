@@ -537,6 +537,11 @@
             "type": "string",
             "value": "[variables('adlsStorageAccountName')]"
         },
+        "StorageContainerName": {
+            "type": "string",
+            "value": "[parameters('adlsStorageAccountContainerName')]"
+        },
+
         "keyVaultName": {
             "type": "string",
             "value": "[variables('keyVaultName')]"
