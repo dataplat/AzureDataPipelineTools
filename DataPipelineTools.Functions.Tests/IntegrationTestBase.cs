@@ -1,19 +1,25 @@
 ﻿using System;
-using System.Runtime.InteropServices.ComTypes;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Threading;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using DataPipelineTools.Tests.Common;
-using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic.FileIO;
 using NUnit.Framework;
+using SearchOption = System.IO.SearchOption;
 
 namespace DataPipelineTools.Functions.Tests
 {
     /// <summary>
-    /// Base class for functions tests. Exposes the 
+    /// Base class for functions integration tests. Exposes the run settings as properties, along with secrets from either the .runsettings file directly, or
+    /// Azure Key Vault as specified by the .runsettings file.
     /// </summary>
     public abstract class IntegrationTestBase : TestBase
     {
-        public IntegrationTestBase()
+        protected IntegrationTestBase()
         {
             if (TestContext.Parameters.Count == 0)
                 throw new ArgumentException("No setting file is configured for the integration tests.");
@@ -29,22 +35,80 @@ namespace DataPipelineTools.Functions.Tests
             }
         }
 
-        protected string FunctionsAppName => TestContext.Parameters["FunctionsAppName"];
-        protected string FunctionsAppUrl => TestContext.Parameters["FunctionsAppUrl"];
+        protected string FunctionsAppName => UseFunctionsEmulator ? "localhost" : TestContext.Parameters["FunctionsAppName"];
+        protected string FunctionsAppUrl => UseFunctionsEmulator ? "http://localhost:7071" : $"https://{TestContext.Parameters["FunctionsAppUrl"]}";
         protected string StorageAccountName => TestContext.Parameters["StorageAccountName"];
         protected string StorageContainerName => TestContext.Parameters["StorageContainerName"];
         protected string KeyVaultName => TestContext.Parameters["KeyVaultName"];
         protected string ServicePrincipalName => TestContext.Parameters["ServicePrincipalName"];
         protected string ApplicationInsightsName => TestContext.Parameters["ApplicationInsightsName"];
-        
-        
-        
-        
-        protected string FunctionsAppKey => TestContext.Parameters["FunctionsAppKey"] ?? GetKeyVaultSecretValue(TestContext.Parameters["KeyVaultSecretFunctionsAppKey"]);
-        protected string ServicePrincipalSecretKey => TestContext.Parameters["ServicePrincipalSecretKey"] ?? GetKeyVaultSecretValue(TestContext.Parameters["KeyVaultSecretServicePrincipalSecretKey"]);
-        protected string StorageContainerSasToken => TestContext.Parameters["StorageContainerSasToken"] ?? GetKeyVaultSecretValue(TestContext.Parameters["KeyVaultSecretStorageContainerSasToken"]);
-        protected string StorageAccountAccessKey => TestContext.Parameters["StorageAccountAccessKey"] ?? GetKeyVaultSecretValue(TestContext.Parameters["KeyVaultSecretStorageAccountAccessKey"]);
-        protected string ApplicationInsightsKey => TestContext.Parameters["ApplicationInsightsKey"] ?? GetKeyVaultSecretValue(TestContext.Parameters["KeyVaultSecretApplicationInsightsKey"]);
+
+
+        // The properties that we get from Azure Key Vault are cached for reuse
+        private string _functionsAppKey;
+        protected string FunctionsAppKey
+        {
+            get
+            {
+                if (_functionsAppKey == null)
+                    _functionsAppKey = TestContext.Parameters["FunctionsAppKey"] ??
+                                       GetKeyVaultSecretValue(TestContext.Parameters["KeyVaultSecretFunctionsAppKey"]);
+
+                return _functionsAppKey;
+            }
+        }
+
+        private string _servicePrincipalSecretKey;
+        protected string ServicePrincipalSecretKey
+        {
+            get
+            {
+                if (_servicePrincipalSecretKey == null)
+                    _servicePrincipalSecretKey = TestContext.Parameters["ServicePrincipalSecretKey"] ??
+                       GetKeyVaultSecretValue(TestContext.Parameters["KeyVaultSecretServicePrincipalSecretKey"]);
+
+                return _servicePrincipalSecretKey;
+            }
+        }
+
+        private string _storageContainerSasToken;
+        protected string StorageContainerSasToken
+        {
+            get
+            {
+                if (_storageContainerSasToken == null)
+                    _storageContainerSasToken = TestContext.Parameters["StorageContainerSasToken"] ??
+                       GetKeyVaultSecretValue(TestContext.Parameters["KeyVaultSecretStorageContainerSasToken"]);
+
+                return _storageContainerSasToken;
+            }
+        }
+
+        private string _storageAccountAccessKey;
+        protected string StorageAccountAccessKey
+        {
+            get
+            {
+                if (_storageAccountAccessKey == null)
+                    _storageAccountAccessKey = TestContext.Parameters["StorageAccountAccessKey"] ??
+                       GetKeyVaultSecretValue(TestContext.Parameters["KeyVaultSecretStorageAccountAccessKey"]);
+
+                return _storageAccountAccessKey;
+            }
+        }
+
+        private string _applicationInsightsKey;
+        protected string ApplicationInsightsKey
+        {
+            get
+            {
+                if (_applicationInsightsKey == null)
+                    _applicationInsightsKey = TestContext.Parameters["ApplicationInsightsKey"] ??
+                       GetKeyVaultSecretValue(TestContext.Parameters["KeyVaultSecretApplicationInsightsKey"]);
+
+                return _applicationInsightsKey;
+            }
+        }
 
 
         [Test]
@@ -59,12 +123,13 @@ namespace DataPipelineTools.Functions.Tests
             Assert.IsNotNull(ServicePrincipalName);
             Assert.IsNotNull(ApplicationInsightsName);
             Assert.IsNotNull(FunctionsAppKey);
+
             Assert.IsNotNull(ServicePrincipalSecretKey);
             Assert.IsNotNull(StorageContainerSasToken);
             Assert.IsNotNull(StorageAccountAccessKey);
             Assert.IsNotNull(ApplicationInsightsKey);
 
-            // Check that the StorageContainerSasToken got unquoted correctly
+            // Check that the StorageContainerSasToken got unquoted correctly from the .runsettings XML file.
             Assert.IsFalse(StorageContainerSasToken.Contains("&amp;"));
         }
 
@@ -84,12 +149,7 @@ namespace DataPipelineTools.Functions.Tests
                 return false;
             }
         }
-
-        protected void StartLocalFunctionsInstance()
-        {
-            throw new NotImplementedException();
-        }
-
+        
         protected string GetKeyVaultSecretValue(string secretName)
         {
             /* For some reason the DefaultAzureCredential (SharedTokenCacheCredential / VisualStudioCredential) returns a 403 trying to access the key vault, even when access policies are configured correctly
@@ -111,7 +171,101 @@ namespace DataPipelineTools.Functions.Tests
             return result?.Value?.Value;
         }
 
-        
 
+
+
+
+
+
+
+        #region Azure Functions Local Host
+        // We use one time setup and teardown to generate a single instance of the emulator across all classes that implement this base class
+
+        private static object _functionsProcessLock = new object();
+
+        [OneTimeSetUp]
+        public void StartFunctionsEmulator()
+        {
+            lock (_functionsProcessLock)
+            {
+                if (UseFunctionsEmulator)
+                {
+                    if (InstanceCount == 0)
+                        StartFunctionsEmulatorInternal();
+
+                    InstanceCount++;
+                }
+            }
+        }
+
+        [OneTimeTearDown]
+        public void StopFunctionsEmulator()
+        {
+            lock (_functionsProcessLock)
+            {
+                if (UseFunctionsEmulator)
+                {
+                    InstanceCount--;
+
+                    if (InstanceCount == 0)
+                        StopFunctionsEmulatorInternal();
+                }
+            }
+        }
+
+
+        protected static bool IsEmulatorRunning => LocalFunctionsHostProcess != null;
+        private static Process LocalFunctionsHostProcess { get; set; }
+        private static int InstanceCount { get; set; }
+
+
+
+        private void StartFunctionsEmulatorInternal()
+        {
+            if (IsEmulatorRunning)
+                return;
+
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string toolsPath = Path.Join(appData, "AzureFunctionsTools", "Releases");
+
+            var toolsVersions = Directory.GetFiles(toolsPath, "func.exe", SearchOption.AllDirectories);
+            var latestToolsVersion = toolsVersions.OrderBy(x => x).FirstOrDefault();
+
+            if (latestToolsVersion == null)
+                throw new FileNotFoundException("The Azure Functions Core tools are not installed. Run the functions app locally to install the tools.");
+
+            const string args = "host start";
+            string binDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+            binDir = binDir.Replace("DataPipelineTools.Functions.Tests", "DataPipelineTools.Functions");
+
+            binDir = @"C:\Users\Niall\src\sqlcollaborative\AzureDataPipelineTools\DataPipelineTools.Functions\bin\Debug";
+
+            ProcessStartInfo hostProcess = new ProcessStartInfo
+            {
+                FileName = latestToolsVersion,
+                Arguments = args,
+                WorkingDirectory = binDir,
+                CreateNoWindow =  false,
+                WindowStyle = ProcessWindowStyle.Normal
+            };
+
+            LocalFunctionsHostProcess = Process.Start(hostProcess);
+
+            // Sleep for 5 seconds to allow the emulated functions app to start
+            Thread.Sleep(5000);
+        }
+
+        private void StopFunctionsEmulatorInternal()
+        {
+            if (!IsEmulatorRunning)
+                return;
+
+            LocalFunctionsHostProcess.Kill();
+            LocalFunctionsHostProcess.WaitForExit();
+            LocalFunctionsHostProcess.Dispose();
+        }
+        
+        #endregion Azure Functions Local Host
     }
 }
