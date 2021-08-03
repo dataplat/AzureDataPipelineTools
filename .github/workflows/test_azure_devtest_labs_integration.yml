@@ -36,14 +36,6 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
 
-    - name: Find test files
-      run: |
-        find ./DataPipelineTools.Functions.Tests/TestData -type f -name ".keepFolder"|while IFS=/ read filename; do
-          echo "$filename"
-          relativePath=$(echo "$filename" | sed -r 's/\.\/DataPipelineTools\.Functions\.Tests//g')
-          echo "$relativePath"
-        done
-
 
     # Build and run the unit tests
     - name: Setup .NET
@@ -62,12 +54,6 @@ jobs:
 
     - name: Run Unit Tests
       run: dotnet test --no-build --configuration ${{ env.BUILD_CONFIGURATION }} --filter TestCategory=UnitTest --output ./output --verbosity normal
-
-    # - name: Extract 
-    #   run: |
-    #     echo "Retriving service principal client secret for the logged in user..."
-    #     echo $("${{ secrets.AZURE_DEV_TEST_LABS_CREDENTIALS }}" | jq '.clientId')
-
 
 
     # Login to Azure
@@ -182,12 +168,10 @@ jobs:
     # Runs a set of commands using the runners shell
     - name: Show create environment outputs
       run: |
-        #echo "ENVIRONMENT_INSTANCE_NAME:                ${{ steps.create-devtest-labs-environment.outputs.ENVIRONMENT_INSTANCE_NAME }}"
-        #echo "ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME: ${{ steps.create-devtest-labs-environment.outputs.ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME }}"
+        echo "ENVIRONMENT_INSTANCE_NAME:                ${{ steps.create-devtest-labs-environment.outputs.ENVIRONMENT_INSTANCE_NAME }}"
+        echo "ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME: ${{ steps.create-devtest-labs-environment.outputs.ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME }}"
         echo "FUNCTIONS_APP_NAME:                       ${{ steps.create-devtest-labs-environment.outputs.FUNCTIONS_APP_NAME }}"
         echo "FUNCTIONS_APP_URI:                        ${{ steps.create-devtest-labs-environment.outputs.FUNCTIONS_APP_URI }}"
-        #echo "FUNCTIONS_APP_KEY:                        ${{ steps.create-devtest-labs-environment.outputs.FUNCTIONS_APP_KEY }}"
-        #echo "STORAGE_ACCOUNTCONNECTION_STRING:         ${{ steps.create-devtest-labs-environment.outputs.STORAGE_ACCOUNTCONNECTION_STRING }}"
         echo "STORAGE_ACCOUNT_NAME:                     ${{ steps.create-devtest-labs-environment.outputs.STORAGE_ACCOUNT_NAME }}"
         echo "STORAGE_CONTAINER_NAME:                   ${{ steps.create-devtest-labs-environment.outputs.STORAGE_CONTAINER_NAME }}"
         echo "KEY_VAULT_NAME:                           ${{ steps.create-devtest-labs-environment.outputs.KEY_VAULT_NAME }}"
@@ -198,43 +182,9 @@ jobs:
     - name: Write the DevTest Labs output runsettings to file
       run: |    
         echo '${{ steps.create-devtest-labs-environment.outputs.RUN_SETTINGS }}' > ${{ env.RUN_SETTINGS_FILENAME }}
-# echo "ENVIRONMENT_INSTANCE_RESOURCES: ${{ steps.get-devtest-labs-environment-resources.outputs.ENVIRONMENT_INSTANCE_RESOURCES }}"
-# az lab arm-template show --resource-group $RESOURCE_GROUP
-
-
-
-
-
-
-    # - name: Get DevTest Labs Environment Resource Info
-    #   id: get-devtest-labs-environment-resources
-    #   uses: azure/CLI@v1
-    #   with:
-    #     #azcliversion: 2.24.0  # Versions prior to this have a bug creating environments
-    #     inlineScript: |
-    #       echo "========================================================================================================================================================================================================"
-    #       echo "Azure CLI Version: $(az version |  jq '."azure-cli"')"
-    #       echo
-    #       echo "Connection info:"
-    #       az account show | jq '. | {tenantId: .tenantId, subscriptionName: .name, userName: .user.name, userType: .user.type}'
-    #       echo
-
-    #       RESOURCE_GROUP="${{ steps.create-devtest-labs-environment.outputs.ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME }}"
-
-    #       ENVIRONMENT_INSTANCE_RESOURCES=$(az resource list --resource-group $RESOURCE_GROUP \
-    #                                         | jq '.[] | { name: .name, id: .id, provisioningState: .provisioningState, kind: .kind, location: .location, tags: .tags }'
-    #                                       )
-
-    #       echo "Output from 'az resource list --resource-group $RESOURCE_GROUP'"
-    #       echo
-    #       echo $ENVIRONMENT_INSTANCE_RESOURCES
-
-    #       echo "::set-output name=ENVIRONMENT_INSTANCE_RESOURCES::$ENVIRONMENT_INSTANCE_RESOURCES"
-
-    #       echo "========================================================================================================================================================================================================"
 
    
-   # Install AZCopy and copy sample files into the data lake
+     # Install AZCopy and copy sample files into the data lake
     - name: Install azcopy
       uses: kheiakiyama/install-azcopy-action@v1.0.3
       with:
