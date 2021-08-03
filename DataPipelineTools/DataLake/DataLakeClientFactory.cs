@@ -19,7 +19,9 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
             // This works as long as the account accessing (managed identity or visual studio user) has both of the following IAM permissions on the storage account:
             // - Reader
             // - Storage Blob Data Reader
-            var credential = new DefaultAzureCredential();
+            //
+            // Note: The SharedTokenCacheCredential type is excluded as it seems to give auth errors
+            var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions { ExcludeSharedTokenCacheCredential = true });
             _logger.LogInformation($"Using credential Type: {credential.GetType().Name}");
 
             var client = new DataLakeFileSystemClient(new Uri(dataLakeConfig.BaseUrl), credential);
