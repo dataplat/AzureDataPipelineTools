@@ -51,11 +51,11 @@
 
         "keyVaultApiVersion": "2021-04-01-preview",
         "keyVaultName": "[concat('kv', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
-        "keyVaultSecret_ServicePrincipalClientSecret": "devopsServicePrincipalClientSecret",
+        "keyVaultSecret_ServicePrincipalClientSecret": "DevopsServicePrincipalClientSecret",
         "keyVaultSecret_StorageSaSToken": "StorageSaSToken",
         "keyVaultSecret_StorageKey": "StorageKey",
-        "keyVaultSecret_functionsKey": "functionsKey",
-        "keyVaultSecret_applicationsInsightsKey": "applicationsInsightsKey",
+        "keyVaultSecret_functionsKey": "FunctionsKey",
+        "keyVaultSecret_applicationsInsightsKey": "ApplicationsInsightsKey",
 
         "applicationInsightsApiVersion": "2020-02-02-preview",
         "applicationInsightsName": "[concat('appinsights', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
@@ -597,7 +597,7 @@
                        '    <Parameter name=\"StorageContainerName\" value=\"', parameters('adlsStorageAccountContainerName'), '\" />',
                        '    <Parameter name=\"KeyVaultName\" value=\"', variables('keyVaultName'), '\" />',
                        '    <Parameter name=\"ServicePrincipalName\" value=\"', parameters('devopsServicePrincipalCredentials').client_id, '\" />',
-                       '    <Parameter name=\"applicationInsightsName\" value=\"', reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), variables('applicationInsightsApiVersion'), 'full').properties.Name, '\" />',
+                       '    <Parameter name=\"ApplicationInsightsName\" value=\"', reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), variables('applicationInsightsApiVersion'), 'full').properties.Name, '\" />',
                        
                        '    <Parameter name=\"KeyVaultSecretFunctionsAppKey\" value=\"', variables('keyVaultSecret_functionsKey'), '\" />',
                        '    <Parameter name=\"KeyVaultSecretServicePrincipalSecretKey\" value=\"', variables('keyVaultSecret_ServicePrincipalClientSecret'), '\" />',

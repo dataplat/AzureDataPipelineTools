@@ -17,14 +17,12 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             Logger.LogInformation($"TestContext.Parameters.Count: { TestContext.Parameters.Count }");
         }
 
-        [Test]
-        public void Test_KeyVaultSecretsAreCorrect()
-        {
-            var servicePrincipalSecretPlainText = TestContext.Parameters["ServicePrincipalSecret"];
-            var servicePrincipalSecretKeyVault = GetKeyVaultSecretValue(TestContext.Parameters["ServicePrincipalSecretKeyName"]);
+        //[Test]
+        //public void Test_RunSettingsLoadedOk()
+        //{
+        //    Assert.
 
-            Assert.AreEqual(servicePrincipalSecretPlainText, servicePrincipalSecretKeyVault);
-            //Assert.Fail("Integration tests not implemented yet.");
-        }
+        //    //Assert.Fail("Integration tests not implemented yet.");
+        //}
     }
 }

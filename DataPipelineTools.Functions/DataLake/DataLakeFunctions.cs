@@ -11,7 +11,7 @@ using SqlCollaborative.Azure.DataPipelineTools.Functions.Common;
 
 namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
 {
-    public partial class DataLakeFunctions: FunctionsBase
+    public class DataLakeFunctions: FunctionsBase
     {
         private readonly DataLakeConfigFactory _configFactory;
         private readonly IDataLakeClientFactory _clientFactory;
