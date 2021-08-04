@@ -24,13 +24,7 @@
             "type": "string",
             "defaultValue": "[utcNow('O')]"
         },
-        "devopsServicePrincipalId": {
-            "type": "string"
-        },
         "devopsServicePrincipalCredentials": {
-            "type": "object"
-        },
-        "devopsServicePrincipalCredentialsTest": {
             "type": "object"
         },
         "adlsStorageAccountContainerName": {
@@ -98,7 +92,7 @@
         //     "name": "[guid(resourceGroup().id, 'devopsServicePrincipal_rg_reader')]",
         //     "properties": {
         //         "roleDefinitionId": "[variables('reader')]",
-        //         "principalId": "[parameters('devopsServicePrincipalId')]"
+        //         "principalId": "[parameters('devopsServicePrincipalCredentials').client_object_id]"
         //     }
         // },
 
@@ -106,11 +100,11 @@
         // 'Storage Blob Data Contributor' scoped to the storage account container
         {
             "type": "Microsoft.Storage/storageAccounts/blobServices/containers/providers/roleAssignments",
-            "name": "[concat(variables('adlsStorageAccountName'), '/default/', parameters('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('devopsServicePrincipalId'), variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDataContributor')))]",
+            "name": "[concat(variables('adlsStorageAccountName'), '/default/', parameters('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('devopsServicePrincipalCredentials').client_object_id, variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDataContributor')))]",
             "apiVersion": "[variables('authorizationApiVersion')]",
             "properties": {
                 "roleDefinitionId": "[variables('storageBlobDataContributor')]",
-                "principalId": "[parameters('devopsServicePrincipalId')]"
+                "principalId": "[parameters('devopsServicePrincipalCredentials').client_object_id]"
             },
             "dependsOn": [
                 "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'), '/blobServices/default/containers/', parameters('adlsStorageAccountContainerName'))]"
@@ -120,12 +114,12 @@
         // 'Contributor' scoped to the functions app to allow code deployments
         {
             "type": "Microsoft.Web/sites/providers/roleAssignments",
-            "name": "[concat(variables('functionsAppName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('devopsServicePrincipalId'), variables('contributor')))]",
+            "name": "[concat(variables('functionsAppName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('devopsServicePrincipalCredentials').client_object_id, variables('contributor')))]",
             ///subscriptions/ee0bd726-cc84-43ef-b846-ed00844a9dec/resourceGroups/AzureDataPipelineTools-CI_Build___feature__azure-devtest-labs-arm-CICD___-559267/providers/Microsoft.Web/sites/func4btzxxxxecb9ee6
             "apiVersion": "[variables('authorizationApiVersion')]",
             "properties": {
                 "roleDefinitionId": "[variables('contributor')]", 
-                "principalId": "[parameters('devopsServicePrincipalId')]"
+                "principalId": "[parameters('devopsServicePrincipalCredentials').client_object_id]"
             },
             "dependsOn": [
                 "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]"
@@ -135,12 +129,12 @@
         // 'Website Contributor' scoped to the application insights to allow code deployments
         {
             "type": "microsoft.insights/components/providers/roleAssignments",
-            "name": "[concat(variables('applicationInsightsName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('devopsServicePrincipalId'), variables('websiteContributor')))]",
+            "name": "[concat(variables('applicationInsightsName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('devopsServicePrincipalCredentials').client_object_id, variables('websiteContributor')))]",
             ///subscriptions/ee0bd726-cc84-43ef-b846-ed00844a9dec/resourceGroups/AzureDataPipelineTools-CI_Build___feature__azure-devtest-labs-arm-CICD___-559267/providers/Microsoft.Web/sites/func4btzxxxxecb9ee6
             "apiVersion": "[variables('authorizationApiVersion')]",
             "properties": {
                 "roleDefinitionId": "[variables('websiteContributor')]", 
-                "principalId": "[parameters('devopsServicePrincipalId')]"
+                "principalId": "[parameters('devopsServicePrincipalCredentials').client_object_id]"
             },
             "dependsOn": [
                 "[resourceId('microsoft.insights/components', variables('applicationInsightsName'))]"
@@ -277,7 +271,7 @@
                 "accessPolicies": [ 
                     {
                         "tenantId": "[subscription().tenantId]",
-                        "objectId": "[parameters('devopsServicePrincipalId')]",
+                        "objectId": "[parameters('devopsServicePrincipalCredentials').client_object_id]",
                         "permissions": {
                             "secrets": [
                                 "list",
@@ -523,8 +517,8 @@
         //         "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
         //         // Reference permissions
         //         //,"[resourceId('Microsoft.Authorization/roleAssignments', guid(resourceGroup().id, 'devopsServicePrincipal_rg_reader'))]"
-        //         ,"[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'), '/blobServices/default/containers/', parameters('adlsStorageAccountContainerName'), '/providers/Microsoft.Authorization/roleAssignments/', guid(resourceGroup().id, parameters('devopsServicePrincipalId'), variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDataContributor')))]"
-        //         // ,"[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers/providers/roleAssignments', concat(variables('adlsStorageAccountName'), '/default/', parameters('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('devopsServicePrincipalId'), variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDataContributor'))))]"
+        //         ,"[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'), '/blobServices/default/containers/', parameters('adlsStorageAccountContainerName'), '/providers/Microsoft.Authorization/roleAssignments/', guid(resourceGroup().id, parameters('devopsServicePrincipalCredentials').client_object_id, variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDataContributor')))]"
+        //         // ,"[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers/providers/roleAssignments', concat(variables('adlsStorageAccountName'), '/default/', parameters('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('devopsServicePrincipalCredentials').client_object_id, variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDataContributor'))))]"
         //         // ,"[resourceId('Microsoft.Storage/storageAccounts/providers/roleAssignments', concat(variables('adlsStorageAccountName'),'/Microsoft.Authorization/',guid(resourceGroup().id, variables('functionsAppName'), variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('reader'))))]"
         //         // ,"[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers/providers/roleAssignments', concat(variables('adlsStorageAccountName'), '/default/', parameters('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, variables('functionsAppName'), variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDatareader'))))]"
         //     ]
@@ -604,7 +598,7 @@
                        '    <Parameter name=\"StorageAccountName\" value=\"', variables('adlsStorageAccountName'), '\" />',
                        '    <Parameter name=\"StorageContainerName\" value=\"', parameters('adlsStorageAccountContainerName'), '\" />',
                        '    <Parameter name=\"KeyVaultName\" value=\"', variables('keyVaultName'), '\" />',
-                       '    <Parameter name=\"ServicePrincipalName\" value=\"', parameters('devopsServicePrincipalId'), '\" />',
+                       '    <Parameter name=\"ServicePrincipalName\" value=\"', parameters('devopsServicePrincipalCredentials').client_id, '\" />',
                        '    <Parameter name=\"ApplicationInsightsName\" value=\"', reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), variables('applicationInsightsApiVersion'), 'full').properties.Name, '\" />',
                        
                        '    <Parameter name=\"KeyVaultSecretFunctionsAppKey\" value=\"', variables('keyVaultSecret_functionsKey'), '\" />',
