@@ -30,6 +30,9 @@
         "devopsServicePrincipalCredentials": {
             "type": "object"
         },
+        "devopsServicePrincipalCredentialsTest": {
+            "type": "object"
+        },
         "adlsStorageAccountContainerName": {
             "type": "string",
             "defaultValue": "test"
@@ -60,7 +63,7 @@
         "applicationInsightsApiVersion": "2020-02-02-preview",
         "applicationInsightsName": "[concat('appinsights', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
 
-        "functionsAppApiVersion": "2015-08-01",
+        "functionsAppApiVersion": "2019-08-01",
         "functionsAppBlobStorageAccountName": "[concat('funcblob', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
         "functionsAppName": "[concat('func', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
 

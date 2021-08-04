@@ -48,9 +48,9 @@ jobs:
       run: dotnet build --no-restore --configuration ${{ env.BUILD_CONFIGURATION }} --output ./output
 
 
-    - name: List Build Files 
-      run: |
-        ls -ltAR ./${{ env.FUNCTIONS_PROJECT_NAME }}/bin/${{ env.BUILD_CONFIGURATION }}
+    # - name: List Build Files 
+    #   run: |
+    #     ls -ltAR ./${{ env.FUNCTIONS_PROJECT_NAME }}/bin/${{ env.BUILD_CONFIGURATION }}
 
     - name: Run Unit Tests
       run: dotnet test --no-build --configuration ${{ env.BUILD_CONFIGURATION }} --filter TestCategory=UnitTest --output ./output --verbosity normal
@@ -103,13 +103,21 @@ jobs:
           SERVICEPRINCIPALID=$( az ad sp list --filter "appId eq '$SERVICEPRINCIPALAPPID' and servicePrincipalType eq 'Application'" --query [0].objectId --output tsv)
           echo "Service Principal Object Id:     $SERVICEPRINCIPALID"
 
+          
+          # Build a JSON snippet with the client/app id, object id and client secret for the devops SPN. This is used by the ARM template to grant permissions on resources so that the devops SPN
+          # can deploy code into them. The ARM template generates the required .runsettings file for the integration tests as an output, which reuses the devops SPN to access resources to test.
+          SERVICEPRINCIPALINFO=$( echo $SERVICEPRINCIPALCREDENTIALS | jq '{clientId, clientSecret, $clientObjectId}' --arg 'clientObjectId' $SERVICEPRINCIPALID -c )
+          
+          echo "Service Principal Info:          $SERVICEPRINCIPALINFO"
+
           echo "Building parameters file for ARM deployment..."
           PARAMETERS_FILE="$(pwd)/azuredeploy.parameters.json"
           echo $'[ { "name":"branch", "value":"'$BRANCH_NAME'" },' \
                 '  { "name":"commit", "value":"'$GITHUB_SHA'" },' \
                 '  { "name":"location", "value":"UK South" },' \
                 '  { "name":"devopsServicePrincipalId", "value":"'$SERVICEPRINCIPALID'" },' \
-                '  { "name":"devopsServicePrincipalCredentials", "value":' $SERVICEPRINCIPALCREDENTIALS ' }' \
+                '  { "name":"devopsServicePrincipalCredentials", "value":' $SERVICEPRINCIPALCREDENTIALS ' },' \
+                '  { "name":"devopsServicePrincipalCredentialsTest", "value":' $SERVICEPRINCIPALINFO ' }' \
                 ']' \
             | jq '.' > "$PARAMETERS_FILE"
           #cat $PARAMETERS_FILE
