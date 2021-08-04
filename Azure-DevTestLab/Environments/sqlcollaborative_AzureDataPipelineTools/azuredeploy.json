@@ -537,7 +537,7 @@
             "type": "string",
             "value": "[variables('adlsStorageAccountName')]"
         },
-        "StorageContainerName": {
+        "storageContainerName": {
             "type": "string",
             "value": "[parameters('adlsStorageAccountContainerName')]"
         },
@@ -601,7 +601,7 @@
                        '    <Parameter name=\"StorageAccountName\" value=\"', variables('adlsStorageAccountName'), '\" />',
                        '    <Parameter name=\"StorageContainerName\" value=\"', parameters('adlsStorageAccountContainerName'), '\" />',
                        '    <Parameter name=\"KeyVaultName\" value=\"', variables('keyVaultName'), '\" />',
-                       '    <Parameter name=\"ServicePrincipalName\" value=\"', parameters('devopsServicePrincipalCredentials').client_id, '\" />',
+                       '    <Parameter name=\"ServicePrincipalName\" value=\"', parameters('devopsServicePrincipalId'), '\" />',
                        '    <Parameter name=\"ApplicationInsightsName\" value=\"', reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), variables('applicationInsightsApiVersion'), 'full').properties.Name, '\" />',
                        
                        '    <Parameter name=\"KeyVaultSecretFunctionsAppKey\" value=\"', variables('keyVaultSecret_functionsKey'), '\" />',
@@ -613,10 +613,6 @@
                        '</RunSettings>'
                       )
                 ]"
-                    //    '    <Parameter name=\"FunctionsAppKey\" value=\"', listKeys(concat(resourceId('Microsoft.Web/sites', variables('functionsAppName')), '/host/default/'), variables('functionsAppApiVersion')).functionKeys.default, '\" />',
-                    //    '    <Parameter name=\"ServicePrincipalSecret\" value=\"', parameters('devopsServicePrincipalCredentials').client_secret, '\" />',
-                    //    '    <Parameter name=\"StorageContainerSasToken\" value=\"', replace(listAccountSas(variables('adlsStorageAccountName'), variables('storageAccountApiVersion'), parameters('adlsStorageAccountSasProperties')).accountSasToken, '&', '&amp;'), '\" />',
-                    //    '    <Parameter name=\"StorageAccountAccessKey\" value=\"', listKeys(variables('adlsStorageAccountResourceId'), variables('storageAccountApiVersion')).keys[0].value, '\" />',
         }
     }
 }

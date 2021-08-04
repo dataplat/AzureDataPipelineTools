@@ -105,11 +105,11 @@ jobs:
 
           echo "Building parameters file for ARM deployment..."
           PARAMETERS_FILE="$(pwd)/azuredeploy.parameters.json"
-          echo $'[ { "name":"'branch'", "value":"'$BRANCH_NAME'" },' \
-                '  { "name":"'commit'", "value":"'$GITHUB_SHA'" },' \
-                '  { "name":"'location'", "value":"UK South" },' \
-                '  { "name":"'devopsServicePrincipalId'", "value":"'$SERVICEPRINCIPALID'" },' \
-                '  { "name":"'devopsServicePrincipalCredentials'", "value":' $SERVICEPRINCIPALCREDENTIALS ' }' \
+          echo $'[ { "name":"branch", "value":"'$BRANCH_NAME'" },' \
+                '  { "name":"commit", "value":"'$GITHUB_SHA'" },' \
+                '  { "name":"location", "value":"UK South" },' \
+                '  { "name":"devopsServicePrincipalId", "value":"'$SERVICEPRINCIPALID'" },' \
+                '  { "name":"devopsServicePrincipalCredentials", "value":' $SERVICEPRINCIPALCREDENTIALS ' }' \
                 ']' \
             | jq '.' > "$PARAMETERS_FILE"
           #cat $PARAMETERS_FILE
@@ -200,6 +200,7 @@ jobs:
         azcopy copy "./DataPipelineTools.Functions.Tests/TestData" "https://$STORAGE_ACCOUNT_NAME.dfs.core.windows.net/$STORAGE_CONTAINER_NAME" --recursive=true --exclude-pattern=".keepDirectory"
 
         # Remove the .keepDirectory files, these are just used to allow us to add empty folders into the sample data in Git
+        # See here for more info: https://github.com/Azure/azure-storage-azcopy/issues/796
         find ./DataPipelineTools.Functions.Tests/TestData -type f -name ".keepFolder"|while IFS=/ read FILENAME; do
           RELATIVE_PATH=$(echo "$FILENAME" | sed -r 's/\.\/DataPipelineTools\.Functions\.Tests\///g')
           azcopy rm "https://$STORAGE_ACCOUNT_NAME.dfs.core.windows.net/$STORAGE_CONTAINER_NAME/$RELATIVE_PATH"
