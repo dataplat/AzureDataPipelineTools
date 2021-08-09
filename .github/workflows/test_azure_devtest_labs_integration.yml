@@ -73,7 +73,8 @@ jobs:
         # This runs in a container, so all output is passed back using 'echo "::set-output name=OUTPUT_VAR_NAME::value here"', as files created won't persist.
         inlineScript: |
           # We need the secrets in an environment variable so they get passed to our shell script that does the work
-          export SERVICEPRINCIPALCREDENTIALS=$'${{ secrets.AZURE_DEV_TEST_LABS_CREDENTIALS }}'
+          export SERVICE_PRINCIPAL_CREDENTIALS=$'${{ secrets.AZURE_DEV_TEST_LABS_CREDENTIALS }}'
+          export ADDITIONAL_PRINCIPALS=$'${{ secrets.ADDITIONAL_PRINCIPALS }}'
 
           # Execute the script to create the dev test lab
           chmod +x ./.github/workflows/deploy.sh
