@@ -521,6 +521,10 @@
                         {
                             "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
                             "value": "[reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), variables('applicationInsightsApiVersion')).ConnectionString]"
+                        },
+                        {
+                            "name": "TENANT_ID",
+                            "value": "[parameters('devopsServicePrincipalCredentials').tenant_id]"
                         }
                     ]
                 }
