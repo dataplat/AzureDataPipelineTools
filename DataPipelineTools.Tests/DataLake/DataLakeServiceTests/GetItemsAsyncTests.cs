@@ -15,7 +15,7 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
     {
 
         protected readonly DataLakeService Sut;
-        private DataLakeConfig DatalakeConfig => new DataLakeConfig();
+        private DataLakeConnectionConfig DatalakeConnectionConfig => new DataLakeConnectionConfig();
 
         public GetItemsAsyncTests()
         {
@@ -38,24 +38,24 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
         {
             var itemsConfig = new DataLakeGetItemsConfig
             {
-                Directory = "raw/api/feb"
+                Path = "raw/api/feb"
             };
 
-            var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result;
+            var result = Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig).Result;
 
             Assert.That(result.Count, Is.EqualTo(2));
         }
 
         private static DataLakeGetItemsConfig[] DirectoryPathWithIncorrectCase =
             {
-                new DataLakeGetItemsConfig {Directory = "RAW/api/feb"},
-                new DataLakeGetItemsConfig {Directory = "raw/API/feb"},
-                new DataLakeGetItemsConfig {Directory = "raw/api/FEB"}
+                new DataLakeGetItemsConfig {Path = "RAW/api/feb"},
+                new DataLakeGetItemsConfig {Path = "raw/API/feb"},
+                new DataLakeGetItemsConfig {Path = "raw/api/FEB"}
             };
         [TestCaseSource(nameof(DirectoryPathWithIncorrectCase))]
         public void Given_DirectoryPathWithIncorrectCase_Should_ReturnContentsForCorrectedPath(DataLakeGetItemsConfig itemsConfig)
         {
-            var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
+            var result = Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
 
             Assert.That(result.FileCount, Is.EqualTo(1));
             Assert.That(result.Files.Count, Is.EqualTo(1));
@@ -68,10 +68,10 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
         {
             var itemsConfig = new DataLakeGetItemsConfig
             {
-                Directory = "some/invalid/path"
+                Path = "some/invalid/path"
             };
 
-            Assert.CatchAsync(() => Sut.GetItemsAsync(DatalakeConfig, itemsConfig));
+            Assert.CatchAsync(() => Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig));
         }
         
         [Test]
@@ -79,25 +79,25 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
         {
             var itemsConfig = new DataLakeGetItemsConfig
             {
-                Directory = "RAW/api/JAN"
+                Path = "RAW/api/JAN"
             };
 
-            Assert.CatchAsync(() => Sut.GetItemsAsync(DatalakeConfig, itemsConfig));
+            Assert.CatchAsync(() => Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig));
         }
 
 
 
         private static object[] LimitNRecords =
         {
-            new object[] {new DataLakeGetItemsConfig {Directory = "raw/api/jan", Limit = 1}, 1},
-            new object[] {new DataLakeGetItemsConfig {Directory = "raw/api/jan", Limit = 3}, 3},
-            new object[] {new DataLakeGetItemsConfig {Directory = "raw/api/jan", Limit = 5}, 5},
-            new object[] {new DataLakeGetItemsConfig {Directory = "raw/api/jan", Limit = 10}, 5} // There's 5 files for that folder in the test csv
+            new object[] {new DataLakeGetItemsConfig {Path = "raw/api/jan", Limit = 1}, 1},
+            new object[] {new DataLakeGetItemsConfig {Path = "raw/api/jan", Limit = 3}, 3},
+            new object[] {new DataLakeGetItemsConfig {Path = "raw/api/jan", Limit = 5}, 5},
+            new object[] {new DataLakeGetItemsConfig {Path = "raw/api/jan", Limit = 10}, 5} // There's 5 files for that folder in the test csv
         };
         [TestCaseSource(nameof(LimitNRecords))]
         public void Given_LimitNRecords_Should_ReturnNRecords(DataLakeGetItemsConfig itemsConfig, int expectedResultCount)
         {
-            var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
+            var result = Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
 
             Assert.That(result.FileCount, Is.EqualTo(expectedResultCount));
             Assert.That(result.Files, Has.Count.EqualTo(expectedResultCount));
@@ -106,16 +106,16 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
 
         private static object[] OrderByColumn =
         {
-            new object[] {new DataLakeGetItemsConfig {Directory = "raw/api/jan", OrderByColumn = "ContentLength" }, new []{10, 20, 30, 40, 50}}, // Default is ascending order
-            new object[] {new DataLakeGetItemsConfig {Directory = "raw/api/jan", OrderByColumn = "ContentLength", OrderByDescending = false }, new []{10, 20, 30, 40, 50}},
-            new object[] {new DataLakeGetItemsConfig {Directory = "raw/api/jan", OrderByColumn = "ContentLength", OrderByDescending = true }, new []{50, 40, 30, 20, 10}}
+            new object[] {new DataLakeGetItemsConfig {Path = "raw/api/jan", OrderByColumn = "ContentLength" }, new []{10, 20, 30, 40, 50}}, // Default is ascending order
+            new object[] {new DataLakeGetItemsConfig {Path = "raw/api/jan", OrderByColumn = "ContentLength", OrderByDescending = false }, new []{10, 20, 30, 40, 50}},
+            new object[] {new DataLakeGetItemsConfig {Path = "raw/api/jan", OrderByColumn = "ContentLength", OrderByDescending = true }, new []{50, 40, 30, 20, 10}}
         };
         [TestCaseSource(nameof(OrderByColumn))]
         public void Given_OrderBy_Should_ReturnRecordsOrderedBySpecifiedColumnWithDirectionSpecifiedByOrderByDescendingFlag(DataLakeGetItemsConfig itemsConfig, int[] expectedContentLengths)
         {
             var expectedFileCount = expectedContentLengths.Length;
 
-            var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
+            var result = Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
 
             Assert.That(result.FileCount, Is.EqualTo(expectedFileCount));
             Assert.That(result.Files, Has.Count.EqualTo(expectedFileCount));
@@ -125,9 +125,9 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
 
         private static object[] LimitNRecordsAndOrderByColumn =
         {
-            new object[] {new DataLakeGetItemsConfig {Directory = "raw/api/jan", OrderByColumn = "ContentLength" }, new []{10, 20, 30}}, // Default is ascending order
-            new object[] {new DataLakeGetItemsConfig {Directory = "raw/api/jan", OrderByColumn = "ContentLength", OrderByDescending = false }, new []{10, 20, 30, 40}},
-            new object[] {new DataLakeGetItemsConfig {Directory = "raw/api/jan", OrderByColumn = "ContentLength", OrderByDescending = true }, new []{50, 40}}
+            new object[] {new DataLakeGetItemsConfig {Path = "raw/api/jan", OrderByColumn = "ContentLength" }, new []{10, 20, 30}}, // Default is ascending order
+            new object[] {new DataLakeGetItemsConfig {Path = "raw/api/jan", OrderByColumn = "ContentLength", OrderByDescending = false }, new []{10, 20, 30, 40}},
+            new object[] {new DataLakeGetItemsConfig {Path = "raw/api/jan", OrderByColumn = "ContentLength", OrderByDescending = true }, new []{50, 40}}
         };
         [TestCaseSource(nameof(LimitNRecordsAndOrderByColumn))]
         public void Given_LimitNRecordAndOrderBy_Should_ReturnTopNRecordsOrderedBySpecifiedColumnWithDirectionSpecifiedByOrderByDescendingFlag(DataLakeGetItemsConfig itemsConfig, int[] expectedContentLengths)
@@ -135,7 +135,7 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
             var expectedFileCount = expectedContentLengths.Length;
             itemsConfig.Limit = expectedFileCount;
 
-            var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
+            var result = Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
 
             Assert.That(result.FileCount, Is.EqualTo(expectedFileCount));
             Assert.That(result.Files, Has.Count.EqualTo(expectedFileCount));
@@ -145,8 +145,8 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
         [Test]
         public void Given_RecursiveFlagIsTrue_Should_ReturnContentRecursively()
         {
-            var itemsConfig = new DataLakeGetItemsConfig {Directory = "raw/database", Recursive = true };
-            var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
+            var itemsConfig = new DataLakeGetItemsConfig {Path = "raw/database", Recursive = true };
+            var result = Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
 
             Assert.That(result.FileCount, Is.EqualTo(5));
             Assert.That(result.Files, Has.Count.EqualTo(5));
@@ -155,26 +155,26 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
         [Test]
         public void Given_RecursiveFlagIsFalse_Should_ReturnDirectoryContentsOnly()
         {
-            var itemsConfig = new DataLakeGetItemsConfig { Directory = "raw/database", Recursive = false };
-            var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
+            var itemsConfig = new DataLakeGetItemsConfig { Path = "raw/database", Recursive = false };
+            var result = Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
 
             Assert.That(result.FileCount, Is.EqualTo(2));
             Assert.That(result.Files, Has.Count.EqualTo(2));
-            Assert.That(result.Files, Has.All.Property(nameof(DataLakeItem.Directory)).EqualTo(itemsConfig.Directory));
+            Assert.That(result.Files, Has.All.Property(nameof(DataLakeItem.Directory)).EqualTo(itemsConfig.Path));
         }
 
         [Test]
         public void Given_DirectoryPathWithIncorrectCaseAndIgnoreDirectoryCaseIsFalse_Should_Throw()
         {
-            var itemsConfig = new DataLakeGetItemsConfig { Directory = "raw/DATABASE", IgnoreDirectoryCase = false };
-            Assert.CatchAsync(() => Sut.GetItemsAsync(DatalakeConfig, itemsConfig));
+            var itemsConfig = new DataLakeGetItemsConfig { Path = "raw/DATABASE", IgnoreDirectoryCase = false };
+            Assert.CatchAsync(() => Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig));
         }
 
         [Test]
         public void Given_DirectoryPathWithIncorrectCaseAndIgnoreDirectoryCaseTrue_Should_ReturnContents()
         {
-            var itemsConfig = new DataLakeGetItemsConfig { Directory = "raw/DATABASE", IgnoreDirectoryCase = true };
-            var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
+            var itemsConfig = new DataLakeGetItemsConfig { Path = "raw/DATABASE", IgnoreDirectoryCase = true };
+            var result = Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
 
             Assert.That(result.FileCount, Is.GreaterThan(0));
             Assert.That(result.Files, Has.Count.GreaterThan(0));
@@ -183,8 +183,8 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
         [Test]
         public void Given_DirectoryPathWithIncorrectCaseAndIgnoreDirectoryCaseIsTrue_WhenMatchesOneDirectoryPath_Should_ReturnCorrectedPath()
         {
-            var itemsConfig = new DataLakeGetItemsConfig { Directory = "raw/DATABASE", IgnoreDirectoryCase = true };
-            var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
+            var itemsConfig = new DataLakeGetItemsConfig { Path = "raw/DATABASE", IgnoreDirectoryCase = true };
+            var result = Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
 
             Assert.That(result.CorrectedFilePath, Is.EqualTo("raw/database"));
         }
@@ -192,8 +192,8 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
         [Test]
         public void Given_DirectoryPathWithIncorrectCaseAndIgnoreDirectoryCaseIsTrue_WhenMatcheMultipleDirectoryPaths_Should_Throw()
         {
-            var itemsConfig = new DataLakeGetItemsConfig { Directory = "raw/ApI", IgnoreDirectoryCase = true };
-            Assert.CatchAsync(() => Sut.GetItemsAsync(DatalakeConfig, itemsConfig));
+            var itemsConfig = new DataLakeGetItemsConfig { Path = "raw/ApI", IgnoreDirectoryCase = true };
+            Assert.CatchAsync(() => Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig));
         }
 
         
@@ -218,9 +218,9 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
         {
             // Have to build the filter here rather than pass it in using TestCaseSource as the logger is not static
             var filter = FilterFactory<DataLakeItem>.Create(filterProperty, filterExpression, Logger);
-            var itemsConfig = new DataLakeGetItemsConfig {Directory = directory, Filters = new[] {filter}};
+            var itemsConfig = new DataLakeGetItemsConfig {Path = directory, Filters = new[] {filter}};
             
-            var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
+            var result = Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
             
             Assert.That(result.FileCount, Is.EqualTo(expectedFileCount));
             Assert.That(result.Files, Has.Count.EqualTo(expectedFileCount));
@@ -242,9 +242,9 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
         {
             // Have to build the filter here rather than pass it in using TestCaseSource as the logger is not static
             var filter = FilterFactory<DataLakeItem>.Create(filterProperty, filterExpression, Logger);
-            var itemsConfig = new DataLakeGetItemsConfig { Directory = directory, Filters = new[] { filter } };
+            var itemsConfig = new DataLakeGetItemsConfig { Path = directory, Filters = new[] { filter } };
 
-            Assert.CatchAsync(() => Sut.GetItemsAsync(DatalakeConfig, itemsConfig));
+            Assert.CatchAsync(() => Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig));
         }
 
         [TestCaseSource(nameof(InvalidFilters))]
@@ -255,9 +255,9 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
                 FilterFactory<DataLakeItem>.Create(nameof(DataLakeItem.FullPath), "like:*jan*", Logger),
                 FilterFactory<DataLakeItem>.Create(nameof(DataLakeItem.IsDirectory), "eq:5", Logger),
             };
-            var itemsConfig = new DataLakeGetItemsConfig { Directory = "raw", Filters = filters };
+            var itemsConfig = new DataLakeGetItemsConfig { Path = "raw", Filters = filters };
 
-            Assert.CatchAsync(() => Sut.GetItemsAsync(DatalakeConfig, itemsConfig));
+            Assert.CatchAsync(() => Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig));
         }
 
         [Test]
@@ -268,8 +268,8 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
                 FilterFactory<DataLakeItem>.Create(nameof(DataLakeItem.FullPath), "like:*jan*", Logger),
                 FilterFactory<DataLakeItem>.Create(nameof(DataLakeItem.IsDirectory), "eq:true", Logger),
             };
-            var itemsConfig = new DataLakeGetItemsConfig { Directory = "raw", Filters = filters};
-            var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
+            var itemsConfig = new DataLakeGetItemsConfig { Path = "raw", Filters = filters};
+            var result = Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
 
             Assert.That(result.FileCount, Is.EqualTo(3));
             Assert.That(result.Files, Has.Count.EqualTo(3));
@@ -286,8 +286,8 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
                 FilterFactory<DataLakeItem>.Create(nameof(DataLakeItem.FullPath), "like:*jan*", Logger),
                 FilterFactory<DataLakeItem>.Create(nameof(DataLakeItem.FullPath), "like:*delta", Logger),
             };
-            var itemsConfig = new DataLakeGetItemsConfig { Directory = "raw", Filters = filters };
-            var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
+            var itemsConfig = new DataLakeGetItemsConfig { Path = "raw", Filters = filters };
+            var result = Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
 
             Assert.That(result.FileCount, Is.EqualTo(6));
             Assert.That(result.Files, Has.Count.EqualTo(6));
@@ -300,11 +300,11 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
         //[Test]
         //public void Given__Should_Return()
         //{
-        //    var itemsConfig = new DataLakeGetItemsConfig { Directory = "raw/database", Recursive = false };
-        //    var result = Sut.GetItemsAsync(DatalakeConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
+        //    var itemsConfig = new DataLakeGetItemsConfig { Path = "raw/database", Recursive = false };
+        //    var result = Sut.GetItemsAsync(DatalakeConnectionConfig, itemsConfig).Result.ToObject<GetItemsResponse>();
 
         //    Assert.That(result.FileCount, Is.EqualTo(2));
-        //    Assert.That(result.Files.All(x => x.Directory == itemsConfig.Directory), Is.True);
+        //    Assert.That(result.Files.All(x => x.Path == itemsConfig.Path), Is.True);
         //}
     }
 

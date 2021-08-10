@@ -13,13 +13,15 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
     [Category(nameof(TestType.IntegrationTest))]
     public class DataLakeGetItemsIntegrationTests: IntegrationTestBase
     {
-        protected string FunctionUri => $"{FunctionsAppUrl}/api/DataLakeGetItems";
+        protected override string FunctionUri => $"{FunctionsAppUrl}/api/DataLakeGetItems";
 
         [SetUp]
         public void Setup()
         {
             Logger.LogInformation($"Running tests in { (IsRunningOnCIServer ? "CI" : "local") } environment using Functions App '{FunctionsAppUrl}'");
             Logger.LogInformation($"TestContext.Parameters.Count: { TestContext.Parameters.Count }");
+
+            Logger.LogInformation($"Key Vault Name: { KeyVaultName }");
         }
 
         [Test]
@@ -28,7 +30,7 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             using (var client = new HttpClient())
             {
                 var queryParams = HttpUtility.ParseQueryString(string.Empty);
-                queryParams["AccountUri"] = this.StorageAccountName;
+                queryParams["account"] = this.StorageAccountName;
                 queryParams["container"] = this.StorageContainerName;
 
                 if (!IsEmulatorRunning)

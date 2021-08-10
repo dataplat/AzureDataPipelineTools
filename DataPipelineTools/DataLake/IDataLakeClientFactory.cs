@@ -8,6 +8,6 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 {
     public interface IDataLakeClientFactory
     {
-        public DataLakeFileSystemClient GetDataLakeClient(DataLakeConfig dataLakeConfig);
+        public DataLakeFileSystemClient GetDataLakeClient(DataLakeConnectionConfig dataLakeConnectionConfig);
     }
 }
