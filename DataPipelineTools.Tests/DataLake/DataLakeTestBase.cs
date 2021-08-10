@@ -135,7 +135,7 @@ namespace DataPipelineTools.Tests.DataLake
             if (string.IsNullOrWhiteSpace(path))
                 return new string[0];
 
-            // Directory separators are changed when using Path.GetDirectoryName(...)
+            // Path separators are changed when using Path.GetDirectoryName(...)
             var parent = Path.GetDirectoryName(path).Replace('\\', '/');
             var grandParents = ExpandAllParentPaths(parent);
 

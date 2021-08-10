@@ -14,7 +14,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.Common
             _logger = logger;
         }
 
-        protected JObject GetTemplateResponse(DataLakeConfig dataLakeConfig, object parameters)
+        protected JObject GetTemplateResponse(IDataLakeConnectionConfig dataLakeConnectionConfig, object parameters)
         {
             var assemblyInfo = AssemblyHelpers.GetAssemblyVersionInfoJson();
 
@@ -22,8 +22,8 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.Common
             if (assemblyInfo.HasValues)
                 responseJson.Add("debugInfo", assemblyInfo);
 
-            if (dataLakeConfig.BaseUrl != null)
-                responseJson.Add("storageContainerUrl", dataLakeConfig.BaseUrl);
+            if (dataLakeConnectionConfig.BaseUrl != null)
+                responseJson.Add("storageContainerUrl", dataLakeConnectionConfig.BaseUrl);
 
             var paramatersJson = JObject.FromObject(parameters);
             responseJson.Add("parameters", paramatersJson);

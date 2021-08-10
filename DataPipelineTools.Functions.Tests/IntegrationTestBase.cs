@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -7,7 +8,8 @@ using System.Threading;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using DataPipelineTools.Tests.Common;
-using Microsoft.VisualBasic.FileIO;
+using Flurl.Util;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using NUnit.Framework;
 using SearchOption = System.IO.SearchOption;
 
@@ -42,6 +44,8 @@ namespace DataPipelineTools.Functions.Tests
         protected string KeyVaultName => TestContext.Parameters["KeyVaultName"];
         protected string ServicePrincipalName => TestContext.Parameters["ServicePrincipalName"];
         protected string ApplicationInsightsName => TestContext.Parameters["ApplicationInsightsName"];
+
+        protected abstract string FunctionUri { get; }
 
 
         // The properties that we get from Azure Key Vault are cached for reuse
@@ -152,6 +156,39 @@ namespace DataPipelineTools.Functions.Tests
         
         protected string GetKeyVaultSecretValue(string secretName)
         {
+            var client = GetKeyVaultClient();
+
+            try
+            {
+                var result = client.GetSecretAsync(secretName).Result;
+
+                return result?.Value?.Value;
+            }
+            catch (Exception ex)
+            {
+                throw new SettingsException(
+                    $"The key vault {KeyVaultName} is inaccessible or has been deleted. Check your run settings file.\n\nInner Exception Message:\n  {ex.Message.Split('\n').First()}");
+            }
+        }
+
+
+        protected IEnumerable<string> GetKeyVaultSecretNames()
+        {
+            var client = GetKeyVaultClient();
+            try
+            {
+                var results = client.GetPropertiesOfSecrets();
+                return results.Select(x => x.Name);
+            }
+            catch (Exception ex)
+            {
+                throw new SettingsException(
+                    $"The key vault {KeyVaultName} is inaccessible or has been deleted. Check your run settings file.\n\nInner Exception Message:\n  {ex.Message.Split('\n').First()}");
+            }
+        }
+
+        private SecretClient GetKeyVaultClient()
+        {
             /* For some reason the DefaultAzureCredential (SharedTokenCacheCredential / VisualStudioCredential) returns a 403 trying to access the key vault, even when access policies are configured correctly
              * We either use one of the following to authenticate:
              *  - var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions{ ExcludeSharedTokenCacheCredential = true, ExcludeVisualStudioCredential = true});
@@ -159,20 +196,16 @@ namespace DataPipelineTools.Functions.Tests
              *
              * See here for more info: https://docs.microsoft.com/en-us/answers/questions/74848/access-denied-to-first-party-service.html
              */
-            var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions { ExcludeSharedTokenCacheCredential = true, ExcludeVisualStudioCredential = true });
+            var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
+                {ExcludeSharedTokenCacheCredential = true, ExcludeVisualStudioCredential = true});
 
             if (string.IsNullOrWhiteSpace(KeyVaultName))
                 throw new ArgumentException("The run setting file does not have a value for 'KeyVaultName'");
 
             var keyVaultUri = $"https://{KeyVaultName}.vault.azure.net";
-            var client = new SecretClient(new Uri(keyVaultUri), credential);
-            var result = client.GetSecretAsync(secretName).Result;
+            return new SecretClient(new Uri(keyVaultUri), credential);
 
-            return result?.Value?.Value;
         }
-
-
-
 
 
 
@@ -186,6 +219,13 @@ namespace DataPipelineTools.Functions.Tests
         [OneTimeSetUp]
         public void StartFunctionsEmulator()
         {
+            // If the run settings is referencing secrets via key vault, make sure we can connect
+            if (TestContext.Parameters.Names.Any(x => x.StartsWith("KeyVaultSecret") && !string.IsNullOrWhiteSpace(TestContext.Parameters[x].ToString())))
+                GetKeyVaultSecretNames();
+            
+
+            // Start the local functions emulator if required. Use a lock so that multiple test classes inheriting from this base class share a
+            // functions emulator instance
             lock (_functionsProcessLock)
             {
                 if (UseFunctionsEmulator)
@@ -201,6 +241,7 @@ namespace DataPipelineTools.Functions.Tests
         [OneTimeTearDown]
         public void StopFunctionsEmulator()
         {
+            // Once the last instance finishes, stop the local emulator instance if we're using it.
             lock (_functionsProcessLock)
             {
                 if (UseFunctionsEmulator)

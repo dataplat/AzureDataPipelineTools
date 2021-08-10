@@ -37,13 +37,10 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             _logger.LogInformation($"C# HTTP trigger function processed a request [User Agent: { (userAgentKey == null ? "Unknown" : req.Headers[userAgentKey].ToString()) }].");
             try
             {
-                var dataLakeConfig = _configFactory.GetDataLakeConfig(req);
+                var dataLakeConfig = _configFactory.GetDataLakeConnectionConfig(req);
                 var getItemsConfig = _configFactory.GetItemsConfig(req);
 
-                if (string.IsNullOrWhiteSpace(dataLakeConfig.AccountUri))
-                    throw new ArgumentException($"Parameter 'accountUri' with value '{dataLakeConfig.AccountUri}' not found. Check the URI is correct.");
-
-                //if (getItemsConfig.Directory == null)
+                //if (getItemsConfig.Path == null)
                 //    throw new ArgumentException($"Parameter 'directory' is required.");
 
                 var client = _clientFactory.GetDataLakeClient(dataLakeConfig);
@@ -79,11 +76,11 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
 
             try
             {
-                var dataLakeConfig = _configFactory.GetDataLakeConfig(req);
+                var dataLakeConfig = _configFactory.GetDataLakeConnectionConfig(req);
                 var getItemsConfig = _configFactory.GetCheckPathCaseConfig(req);
 
-                if (string.IsNullOrWhiteSpace(dataLakeConfig.AccountUri))
-                    throw new ArgumentException($"Parameter 'accountUri' with value '{dataLakeConfig.AccountUri}' not found. Check the URI is correct.");
+                if (string.IsNullOrWhiteSpace(dataLakeConfig.Account))
+                    throw new ArgumentException($"Parameter 'accountUri' with value '{dataLakeConfig.Account}' not found. Check the URI is correct.");
 
                 if (getItemsConfig.Path == null)
                     throw new ArgumentException($"Parameter 'path' is required.");

@@ -40,7 +40,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
             if (pathExists)
                 return path;
 
-            _logger.LogInformation($"${(isDirectory ? "Directory" : "File")} '${path}' not found, checking paths case using case insensitive compare...");
+            _logger.LogInformation($"${(isDirectory ? "Path" : "File")} '${path}' not found, checking paths case using case insensitive compare...");
 
             // Split the paths so we can test them separately
             var directoryPath = isDirectory ? path : Path.GetDirectoryName(path)?.Replace(Path.DirectorySeparatorChar, '/');
@@ -102,17 +102,17 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 
         }
 
-        public async Task<JObject> GetItemsAsync(DataLakeConfig dataLakeConfig, DataLakeGetItemsConfig getItemsConfig)
+        public async Task<JObject> GetItemsAsync(IDataLakeConnectionConfig dataLakeConnectionConfig, DataLakeGetItemsConfig getItemsConfig)
         {
             // Check the directory exists. If multiple directories match (ie different casing), it will throw an error, as we don't know
             // which one we wanted the files from.
             var directory = getItemsConfig.IgnoreDirectoryCase ?
-                                await CheckPathAsync(getItemsConfig.Directory, true) :
-                                getItemsConfig.Directory;
+                                await CheckPathAsync(getItemsConfig.Path, true) :
+                                getItemsConfig.Path;
 
             // Only check the path if it is not the root. Checking is the root exists throws, and if the container is valid the root will always be valid
             if (directory != "/" && !await _client.GetDirectoryClient(directory).ExistsAsync() )
-                throw new DirectoryNotFoundException($"Directory '{directory} could not be found'");
+                throw new DirectoryNotFoundException($"Path '{directory} could not be found'");
 
             var paths = _client
                 .GetPaths(path: directory ?? string.Empty, recursive: getItemsConfig.Recursive)
@@ -120,7 +120,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
                 {
                     Name = Path.GetFileName(p.Name),
                     Directory = Path.GetDirectoryName(p.Name).Replace(Path.DirectorySeparatorChar, '/'),
-                    Url = Url.Combine(dataLakeConfig.BaseUrl, p.Name),
+                    Url = Url.Combine(dataLakeConnectionConfig.BaseUrl, p.Name),
                     IsDirectory = p.IsDirectory.GetValueOrDefault(false),
                     ContentLength = p.ContentLength.GetValueOrDefault(0),
                     LastModified = p.LastModified.ToUniversalTime()
@@ -161,7 +161,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
                                      $"\"files\": {JsonConvert.SerializeObject(paths, Formatting.Indented, formatter)}" :
                                      string.Empty;
 
-            var resultJson = $"{{ {(getItemsConfig.IgnoreDirectoryCase && directory != getItemsConfig.Directory ? $"\"correctedFilePath\": \"{directory}\"," : string.Empty)} {filesListJson} }}";
+            var resultJson = $"{{ {(getItemsConfig.IgnoreDirectoryCase && directory != getItemsConfig.Path ? $"\"correctedFilePath\": \"{directory}\"," : string.Empty)} {filesListJson} }}";
 
             return JObject.Parse(resultJson);
         }
