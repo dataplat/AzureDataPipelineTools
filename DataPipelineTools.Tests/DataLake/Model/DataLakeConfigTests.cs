@@ -18,7 +18,7 @@ namespace DataPipelineTools.Tests.DataLake.Model
         [Test]
         public void BaseUrl_ShouldContain_AccountUri()
         {
-            var config = new DataLakeConnectionConfig { Account = AccountUri, Container = ContainerName };
+            var config = new DataLakeFunctionsServicePrincipalConnectionConfig() { Account = AccountUri, Container = ContainerName };
 
             Assert.IsTrue(config.BaseUrl.StartsWith($"https://{AccountUri}"));
         }
@@ -26,7 +26,7 @@ namespace DataPipelineTools.Tests.DataLake.Model
         [Test]
         public void BaseUrl_ShouldContain_ContainerName()
         {
-            var config = new DataLakeConnectionConfig { Account = AccountUri, Container = ContainerName };
+            var config = new DataLakeFunctionsServicePrincipalConnectionConfig() { Account = AccountUri, Container = ContainerName };
 
             Assert.IsTrue(config.BaseUrl.EndsWith(ContainerName));
         }

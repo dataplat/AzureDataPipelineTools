@@ -14,7 +14,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.Common
             _logger = logger;
         }
 
-        protected JObject GetTemplateResponse(DataLakeConnectionConfig dataLakeConnectionConfig, object parameters)
+        protected JObject GetTemplateResponse(IDataLakeConnectionConfig dataLakeConnectionConfig, object parameters)
         {
             var assemblyInfo = AssemblyHelpers.GetAssemblyVersionInfoJson();
 

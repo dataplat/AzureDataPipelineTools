@@ -15,7 +15,7 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
     {
 
         protected readonly DataLakeService Sut;
-        private DataLakeConnectionConfig DatalakeConnectionConfig => new DataLakeConnectionConfig();
+        private IDataLakeConnectionConfig DatalakeConnectionConfig => new DataLakeUserServicePrincipalConnectionConfig();
 
         public GetItemsAsyncTests()
         {
