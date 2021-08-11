@@ -1,12 +1,12 @@
 ﻿
 using SqlCollaborative.Azure.DataPipelineTools.DataLake.Model;
-using Azure.Identity;
 using Azure.Storage.Files.DataLake;
 using Microsoft.Extensions.Logging;
 using System;
 using Azure;
-using Azure.Core;
+using Azure.Identity;
 using Azure.Storage;
+using SqlCollaborative.Azure.DataPipelineTools.Common;
 
 namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 {
@@ -50,40 +50,47 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
         }
 
 
-        private DataLakeFileSystemClient GetClient(DataLakeFunctionsServicePrincipalConnectionConfig dataLakeConnectionConfig)
+        private DataLakeFileSystemClient GetClient(DataLakeFunctionsServicePrincipalConnectionConfig connectionConfig)
         {
             // This works as long as the account accessing (managed identity or visual studio user) has both of the following IAM permissions on the storage account:
             // - Reader
             // - Storage Blob Data Reader
             //
             // Note: The SharedTokenCacheCredential type is excluded as it seems to give auth errors
-            var cred = new DefaultAzureCredential(new DefaultAzureCredentialOptions { ExcludeSharedTokenCacheCredential = true });
+            var cred = AzureIdentityHelper.GetDefaultAzureCredential();
             _logger.LogInformation($"Using credential Type: {cred.GetType().Name}");
             
-            return new DataLakeFileSystemClient(new Uri(dataLakeConnectionConfig.BaseUrl), cred);
+            return new DataLakeFileSystemClient(new Uri(connectionConfig.BaseUrl), cred);
         }
 
-        private DataLakeFileSystemClient GetClient(DataLakeUserServicePrincipalConnectionConfig dataLakeConnectionConfig)
+        private DataLakeFileSystemClient GetClient(DataLakeUserServicePrincipalConnectionConfig connectionConfig)
         {
-            // Work out how to create a token credential from a cleint id and secret. Do we need the tenant id?
-            throw new NotImplementedException();
-        }
-        private DataLakeFileSystemClient GetClient(DataLakeSasTokenConnectionConfig dataLakeConnectionConfig)
-        {
-            // Required shared access signature, should be the uri and sas token combined
-            //var cred = new AzureSasCredential(dataLakeConnectionConfig.SasToken);
-            //_logger.LogInformation($"Using credential Type: {cred.GetType().Name}");
+            // If we have an Azure Key Vault reference, we get the actual secert from there
+            var secret = string.IsNullOrWhiteSpace(connectionConfig.KeyVault)
+                ? connectionConfig.ServicePrincipalClientSecret
+                : KeyVaultHelpers.GetKeyVaultSecretValue(connectionConfig.KeyVault, connectionConfig.ServicePrincipalClientSecret);
 
-            //return new DataLakeFileSystemClient(new Uri(dataLakeConnectionConfig.BaseUrl), cred);
-
-            throw new NotImplementedException();
-        }
-        private DataLakeFileSystemClient GetClient(DataLakeAccountKeyConnectionConfig dataLakeConnectionConfig)
-        {
-            var cred = new StorageSharedKeyCredential(dataLakeConnectionConfig.Account, dataLakeConnectionConfig.AccountKeySecret);
+            var cred = new ClientSecretCredential(AzureIdentityHelper.TenantId, connectionConfig.ServicePrincipalClientId, secret);
             _logger.LogInformation($"Using credential Type: {cred.GetType().Name}");
 
-            return new DataLakeFileSystemClient(new Uri(dataLakeConnectionConfig.BaseUrl), cred);
+            return new DataLakeFileSystemClient(new Uri(connectionConfig.BaseUrl), cred);
+        }
+        private DataLakeFileSystemClient GetClient(DataLakeSasTokenConnectionConfig connectionConfig)
+        {
+            // Required shared access signature, should be the uri and sas token combined
+            var cred = new AzureSasCredential(connectionConfig.SasToken);
+            _logger.LogInformation($"Using credential Type: {cred.GetType().Name}");
+
+            return new DataLakeFileSystemClient(new Uri(connectionConfig.BaseUrl), cred);
+
+            throw new NotImplementedException();
+        }
+        private DataLakeFileSystemClient GetClient(DataLakeAccountKeyConnectionConfig connectionConfig)
+        {
+            var cred = new StorageSharedKeyCredential(connectionConfig.Account, connectionConfig.AccountKeySecret);
+            _logger.LogInformation($"Using credential Type: {cred.GetType().Name}");
+
+            return new DataLakeFileSystemClient(new Uri(connectionConfig.BaseUrl), cred);
         }
         }
 }

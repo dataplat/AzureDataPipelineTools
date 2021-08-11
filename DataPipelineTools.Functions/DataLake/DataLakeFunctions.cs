@@ -25,8 +25,6 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
         }
 
 
-
-
         [FunctionName("DataLakeGetItems")]
         public async Task<IActionResult> DataLakeGetItems(
             [HttpTrigger(AuthorizationLevel.Function, "get" /*, "post"*/, Route = null)] HttpRequest req)
@@ -39,9 +37,6 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             {
                 var dataLakeConfig = _configFactory.GetDataLakeConnectionConfig(req);
                 var getItemsConfig = _configFactory.GetItemsConfig(req);
-
-                //if (getItemsConfig.Path == null)
-                //    throw new ArgumentException($"Parameter 'directory' is required.");
 
                 var client = _clientFactory.GetDataLakeClient(dataLakeConfig);
                 var controller = _serviceFactory.CreateDataLakeService(client);

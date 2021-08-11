@@ -215,7 +215,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
         {
             var data = GetRequestDataDictionary(req);
             return (string) req.Query[parameterName] ??
-                   data?[parameterName]?.ToString();
+                   data?[parameterName]?.ToString().Trim();
         }
 
 

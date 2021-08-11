@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Azure.Storage.Blobs.Models;
-
-namespace SqlCollaborative.Azure.DataPipelineTools.Common
+﻿namespace SqlCollaborative.Azure.DataPipelineTools.Common
 {
     public static class StringEx
     {

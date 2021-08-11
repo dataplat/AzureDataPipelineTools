@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq.Dynamic.Core.CustomTypeProviders;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 namespace SqlCollaborative.Azure.DataPipelineTools.Common
