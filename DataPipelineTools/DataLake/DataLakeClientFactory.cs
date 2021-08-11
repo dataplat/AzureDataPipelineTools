@@ -65,7 +65,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 
         private DataLakeFileSystemClient GetClient(DataLakeUserServicePrincipalConnectionConfig connectionConfig)
         {
-            // If we have an Azure Key Vault reference, we get the actual secert from there
+            // If we have an Azure Key Vault reference, we get the actual secret from there
             var secret = string.IsNullOrWhiteSpace(connectionConfig.KeyVault)
                 ? connectionConfig.ServicePrincipalClientSecret
                 : KeyVaultHelpers.GetKeyVaultSecretValue(connectionConfig.KeyVault, connectionConfig.ServicePrincipalClientSecret);
@@ -77,8 +77,12 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
         }
         private DataLakeFileSystemClient GetClient(DataLakeSasTokenConnectionConfig connectionConfig)
         {
-            // Required shared access signature, should be the uri and sas token combined
-            var cred = new AzureSasCredential(connectionConfig.SasToken);
+            // If we have an Azure Key Vault reference, we get the actual secret from there
+            var secret = string.IsNullOrWhiteSpace(connectionConfig.KeyVault)
+                ? connectionConfig.SasToken
+                : KeyVaultHelpers.GetKeyVaultSecretValue(connectionConfig.KeyVault, connectionConfig.SasToken);
+
+            var cred = new AzureSasCredential(secret);
             _logger.LogInformation($"Using credential Type: {cred.GetType().Name}");
 
             return new DataLakeFileSystemClient(new Uri(connectionConfig.BaseUrl), cred);
@@ -87,7 +91,12 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
         }
         private DataLakeFileSystemClient GetClient(DataLakeAccountKeyConnectionConfig connectionConfig)
         {
-            var cred = new StorageSharedKeyCredential(connectionConfig.Account, connectionConfig.AccountKeySecret);
+            // If we have an Azure Key Vault reference, we get the actual secret from there
+            var secret = string.IsNullOrWhiteSpace(connectionConfig.KeyVault)
+                ? connectionConfig.AccountKey
+                : KeyVaultHelpers.GetKeyVaultSecretValue(connectionConfig.KeyVault, connectionConfig.AccountKey);
+
+            var cred = new StorageSharedKeyCredential(connectionConfig.Account, secret);
             _logger.LogInformation($"Using credential Type: {cred.GetType().Name}");
 
             return new DataLakeFileSystemClient(new Uri(connectionConfig.BaseUrl), cred);

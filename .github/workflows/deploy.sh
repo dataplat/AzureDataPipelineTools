@@ -65,15 +65,16 @@ echo $ENVIRONMENT_CREATE_OUTPUT
 PROVISIONING_STATE=$(echo $ENVIRONMENT_CREATE_OUTPUT |  jq --raw-output '.provisioningState')
 echo "Provisioning State: $PROVISIONING_STATE"
 
+if [ "$PROVISIONING_STATE" != "Succeeded" ]; then
+    echo "::error Error provisioning lab environment"
+    exit 1
+fi
+
 ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME=$(echo $ENVIRONMENT_CREATE_OUTPUT |  jq --raw-output '.resourceGroupId' | xargs basename)
 echo "Resource Group Id: $ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME"
 
 echo "::set-output name=ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME::$ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME"
 
-if [ $PROVISIONING_STATE != "Succeeded" ]; then
-echo "::error Error provisioning lab environment"
-exit 1
-fi
 
 DEPLOYMENTOUTPUT=$(az deployment group list --resource-group $ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME --query '[0].properties.outputs')
 

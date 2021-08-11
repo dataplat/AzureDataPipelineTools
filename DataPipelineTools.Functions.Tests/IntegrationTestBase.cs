@@ -60,16 +60,10 @@ namespace DataPipelineTools.Functions.Tests
 
         // The properties that we get from Azure Key Vault are cached for reuse
         private string _functionsAppKey;
-
         protected string FunctionsAppKeyName => TestContext.Parameters["KeyVaultSecretFunctionsAppKey"];
-
-        protected string ServicePrincipalSecretKeyName =>
-            TestContext.Parameters["KeyVaultSecretServicePrincipalSecretKey"];
-
-        protected string StorageContainerSasTokenName =>
-            TestContext.Parameters["KeyVaultSecretStorageContainerSasToken"];
-
-        protected string StorageAccountAccessKeyname => TestContext.Parameters["KeyVaultSecretStorageAccountAccessKey"];
+        protected string ServicePrincipalSecretKeyName => TestContext.Parameters["KeyVaultSecretServicePrincipalSecretKey"];
+        protected string StorageContainerSasTokenName => TestContext.Parameters["KeyVaultSecretStorageContainerSasToken"];
+        protected string StorageAccountAccessKeyName => TestContext.Parameters["KeyVaultSecretStorageAccountAccessKey"];
         protected string ApplicationInsightsKeyName => TestContext.Parameters["KeyVaultSecretApplicationInsightsKey"];
 
         protected string FunctionsAppKey
@@ -126,7 +120,7 @@ namespace DataPipelineTools.Functions.Tests
                 if (_storageAccountAccessKey == null)
                     _storageAccountAccessKey = TestContext.Parameters["StorageAccountAccessKey"] ??
                                                KeyVaultHelpers.GetKeyVaultSecretValue(KeyVaultName,
-                                                   StorageAccountAccessKeyname);
+                                                   StorageAccountAccessKeyName);
 
                 return _storageAccountAccessKey;
             }
@@ -214,13 +208,23 @@ namespace DataPipelineTools.Functions.Tests
         }
 
 
+        private static Random random = new Random();
+        public static string RandomString(int length)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            return new string(Enumerable.Repeat(chars, length)
+              .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
 
 
         protected void LogContent(HttpResponseMessage response)
         {
             // Only log the response in debug sessions, no point having all that info for a CI run
 #if DEBUG
-            var content = response.Content.ReadAsStringAsync().Result;
+            var content = response?.Content?.ReadAsStringAsync()?.Result;
+            if (string.IsNullOrWhiteSpace(content))
+                return;
+
             var json = JObject.Parse(content).ToString();
             Logger.LogInformation($"Content:\n {json}");
 #endif
