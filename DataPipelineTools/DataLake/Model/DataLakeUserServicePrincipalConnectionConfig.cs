@@ -1,7 +1,4 @@
-﻿using System;
-using Azure.Storage.Files.DataLake;
-
-namespace SqlCollaborative.Azure.DataPipelineTools.DataLake.Model
+﻿namespace SqlCollaborative.Azure.DataPipelineTools.DataLake.Model
 {
     public class DataLakeUserServicePrincipalConnectionConfig : IDataLakeConnectionConfig
     {
@@ -11,5 +8,6 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake.Model
         public string ServicePrincipalClientSecret { get; set; }
         public string BaseUrl { get { return $"https://{Account}.dfs.core.windows.net/{Container}"; } }
         public string KeyVault { get; set; }
+        public AuthType AuthType => AuthType.UserServicePrincipal;
     }
 }

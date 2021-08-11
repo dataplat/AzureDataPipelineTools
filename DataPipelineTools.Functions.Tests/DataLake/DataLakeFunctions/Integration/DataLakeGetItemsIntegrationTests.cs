@@ -1,16 +1,18 @@
-using System;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
-using System.Web;
 using DataPipelineTools.Tests.Common;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
+using SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake;
+using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Threading.Tasks;
+using SqlCollaborative.Azure.DataPipelineTools.DataLake.Model;
 
 namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integration
 {
     [TestFixture]
     [Category(nameof(TestType.IntegrationTest))]
+    [Parallelizable(ParallelScope.Children)]
     public class DataLakeGetItemsIntegrationTests: IntegrationTestBase
     {
         protected override string FunctionUri => $"{FunctionsAppUrl}/api/DataLakeGetItems";
@@ -25,33 +27,60 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
         }
 
         [Test]
-        public async Task Test_FunctionIsRunnable()
+        public async Task Test_FunctionIsRunnable_With_FunctionsServicePrincipalAuth()
         {
-            using (var client = new HttpClient())
+            var parameters = new Dictionary<string, string>
             {
-                var queryParams = HttpUtility.ParseQueryString(string.Empty);
-                queryParams["account"] = this.StorageAccountName;
-                queryParams["container"] = this.StorageContainerName;
+                {DataLakeConfigFactory.AccountParam, StorageAccountName},
+                {DataLakeConfigFactory.ContainerParam, StorageContainerName}
+            };
+            var response = await RunQueryFromParameters(parameters);
+            LogContent(response);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
 
-                if (!IsEmulatorRunning)
-                    queryParams["code"] = this.FunctionsAppKey;
-
-                var urlBuilder = new UriBuilder(FunctionUri)
-                {
-                    Query = queryParams.ToString() ?? string.Empty
-                };
-                var queryUrl = urlBuilder.ToString();
-
-                if (!IsRunningOnCIServer)
-                    Logger.LogInformation($"Query URL: {queryUrl}");
-                
-                var result = await client.GetAsync(queryUrl);
-                var content = result.Content.ReadAsStringAsync().Result;
-
-                Logger.LogInformation($"Content: {content}");
-
-                Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
-            }
+            // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
+            dynamic results = GetResultsObject(response);
+            Assert.AreEqual(AuthType.FunctionsServicePrincipal, (AuthType)results.authType);
         }
+
+        [Test]
+        public async Task Test_FunctionIsRunnable_With_UserServicePrincipalAuthAndPlainTextKey()
+        {
+            var parameters = new Dictionary<string, string>
+            {
+                {DataLakeConfigFactory.AccountParam, StorageAccountName},
+                {DataLakeConfigFactory.ContainerParam, StorageContainerName},
+                {DataLakeConfigFactory.ServicePrincipalClientIdParam, ServicePrincipalName},
+                {DataLakeConfigFactory.ServicePrincipalClientSecretParam, ServicePrincipalSecretKey},
+            };
+            var response = await RunQueryFromParameters(parameters);
+            LogContent(response);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
+            dynamic results = GetResultsObject(response);
+            Assert.AreEqual(AuthType.UserServicePrincipal, (AuthType)results.authType);
+        }
+
+        [Test]
+        public async Task Test_FunctionIsRunnable_With_UserServicePrincipalAuthAndKeyVaultKeyName()
+        {
+            var parameters = new Dictionary<string, string>
+            {
+                {DataLakeConfigFactory.AccountParam, StorageAccountName},
+                {DataLakeConfigFactory.ContainerParam, StorageContainerName},
+                {DataLakeConfigFactory.ServicePrincipalClientIdParam, ServicePrincipalName},
+                {DataLakeConfigFactory.ServicePrincipalClientSecretParam, ServicePrincipalSecretKeyName},
+                {DataLakeConfigFactory.KeyVaultParam, KeyVaultName}
+            };
+            var response = await RunQueryFromParameters(parameters);
+            LogContent(response);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
+            dynamic results = GetResultsObject(response);
+            Assert.AreEqual(AuthType.UserServicePrincipal, (AuthType)results.authType);
+        }
+
     }
 }

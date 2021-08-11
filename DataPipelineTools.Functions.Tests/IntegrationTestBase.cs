@@ -3,14 +3,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Threading;
-using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
+using System.Threading.Tasks;
+using System.Web;
 using DataPipelineTools.Tests.Common;
-using Flurl.Util;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using SqlCollaborative.Azure.DataPipelineTools.Common;
 using SearchOption = System.IO.SearchOption;
 
 namespace DataPipelineTools.Functions.Tests
@@ -21,6 +24,8 @@ namespace DataPipelineTools.Functions.Tests
     /// </summary>
     public abstract class IntegrationTestBase : TestBase
     {
+        protected const string FunctionsAppKeyParam = "Code";
+
         protected IntegrationTestBase()
         {
             if (TestContext.Parameters.Count == 0)
@@ -37,8 +42,13 @@ namespace DataPipelineTools.Functions.Tests
             }
         }
 
-        protected string FunctionsAppName => UseFunctionsEmulator ? "localhost" : TestContext.Parameters["FunctionsAppName"];
-        protected string FunctionsAppUrl => UseFunctionsEmulator ? "http://localhost:7071" : $"https://{TestContext.Parameters["FunctionsAppUrl"]}";
+        protected string FunctionsAppName =>
+            UseFunctionsEmulator ? "localhost" : TestContext.Parameters["FunctionsAppName"];
+
+        protected string FunctionsAppUrl => UseFunctionsEmulator
+            ? "http://localhost:7071"
+            : $"https://{TestContext.Parameters["FunctionsAppUrl"]}";
+
         protected string StorageAccountName => TestContext.Parameters["StorageAccountName"];
         protected string StorageContainerName => TestContext.Parameters["StorageContainerName"];
         protected string KeyVaultName => TestContext.Parameters["KeyVaultName"];
@@ -50,65 +60,88 @@ namespace DataPipelineTools.Functions.Tests
 
         // The properties that we get from Azure Key Vault are cached for reuse
         private string _functionsAppKey;
+
+        protected string FunctionsAppKeyName => TestContext.Parameters["KeyVaultSecretFunctionsAppKey"];
+
+        protected string ServicePrincipalSecretKeyName =>
+            TestContext.Parameters["KeyVaultSecretServicePrincipalSecretKey"];
+
+        protected string StorageContainerSasTokenName =>
+            TestContext.Parameters["KeyVaultSecretStorageContainerSasToken"];
+
+        protected string StorageAccountAccessKeyname => TestContext.Parameters["KeyVaultSecretStorageAccountAccessKey"];
+        protected string ApplicationInsightsKeyName => TestContext.Parameters["KeyVaultSecretApplicationInsightsKey"];
+
         protected string FunctionsAppKey
         {
             get
             {
                 if (_functionsAppKey == null)
                     _functionsAppKey = TestContext.Parameters["FunctionsAppKey"] ??
-                                       GetKeyVaultSecretValue(TestContext.Parameters["KeyVaultSecretFunctionsAppKey"]);
+                                       KeyVaultHelpers.GetKeyVaultSecretValue(KeyVaultName, FunctionsAppKeyName);
 
                 return _functionsAppKey;
             }
         }
 
+
         private string _servicePrincipalSecretKey;
+
         protected string ServicePrincipalSecretKey
         {
             get
             {
                 if (_servicePrincipalSecretKey == null)
                     _servicePrincipalSecretKey = TestContext.Parameters["ServicePrincipalSecretKey"] ??
-                       GetKeyVaultSecretValue(TestContext.Parameters["KeyVaultSecretServicePrincipalSecretKey"]);
+                                                 KeyVaultHelpers.GetKeyVaultSecretValue(KeyVaultName,
+                                                     ServicePrincipalSecretKeyName);
 
                 return _servicePrincipalSecretKey;
             }
         }
 
+
         private string _storageContainerSasToken;
+
         protected string StorageContainerSasToken
         {
             get
             {
                 if (_storageContainerSasToken == null)
                     _storageContainerSasToken = TestContext.Parameters["StorageContainerSasToken"] ??
-                       GetKeyVaultSecretValue(TestContext.Parameters["KeyVaultSecretStorageContainerSasToken"]);
+                                                KeyVaultHelpers.GetKeyVaultSecretValue(KeyVaultName,
+                                                    StorageContainerSasTokenName);
 
                 return _storageContainerSasToken;
             }
         }
 
+
         private string _storageAccountAccessKey;
+
         protected string StorageAccountAccessKey
         {
             get
             {
                 if (_storageAccountAccessKey == null)
                     _storageAccountAccessKey = TestContext.Parameters["StorageAccountAccessKey"] ??
-                       GetKeyVaultSecretValue(TestContext.Parameters["KeyVaultSecretStorageAccountAccessKey"]);
+                                               KeyVaultHelpers.GetKeyVaultSecretValue(KeyVaultName,
+                                                   StorageAccountAccessKeyname);
 
                 return _storageAccountAccessKey;
             }
         }
 
         private string _applicationInsightsKey;
+
         protected string ApplicationInsightsKey
         {
             get
             {
                 if (_applicationInsightsKey == null)
                     _applicationInsightsKey = TestContext.Parameters["ApplicationInsightsKey"] ??
-                       GetKeyVaultSecretValue(TestContext.Parameters["KeyVaultSecretApplicationInsightsKey"]);
+                                              KeyVaultHelpers.GetKeyVaultSecretValue(KeyVaultName,
+                                                  ApplicationInsightsKeyName);
 
                 return _applicationInsightsKey;
             }
@@ -153,65 +186,57 @@ namespace DataPipelineTools.Functions.Tests
                 return false;
             }
         }
-        
-        protected string GetKeyVaultSecretValue(string secretName)
+
+
+
+        protected async Task<HttpResponseMessage> RunQueryFromParameters(Dictionary<string, string> parameters)
         {
-            var client = GetKeyVaultClient();
+            using var client = new HttpClient();
+            var queryParams = HttpUtility.ParseQueryString(string.Empty);
+            foreach (var (name, value) in parameters)
+                queryParams[name] = value;
 
-            try
-            {
-                var result = client.GetSecretAsync(secretName).Result;
+            // If we are hitting an actual functions instance, include the app key to authenticate against it
+            if (!IsEmulatorRunning)
+                queryParams[FunctionsAppKeyParam] = FunctionsAppKey;
 
-                return result?.Value?.Value;
-            }
-            catch (Exception ex)
+            var urlBuilder = new UriBuilder(FunctionUri)
             {
-                throw new SettingsException(
-                    $"The key vault {KeyVaultName} is inaccessible or has been deleted. Check your run settings file.\n\nInner Exception Message:\n  {ex.Message.Split('\n').First()}");
-            }
+                Query = queryParams.ToString() ?? string.Empty
+            };
+            var queryUrl = urlBuilder.ToString();
+
+            // If we are running locally, log the URL to help with debugging
+            if (!IsRunningOnCIServer)
+                Logger.LogInformation($"Query URL: {queryUrl}");
+
+            return await client.GetAsync(queryUrl);
         }
 
 
-        protected IEnumerable<string> GetKeyVaultSecretNames()
+
+
+        protected void LogContent(HttpResponseMessage response)
         {
-            var client = GetKeyVaultClient();
-            try
-            {
-                var results = client.GetPropertiesOfSecrets();
-                return results.Select(x => x.Name);
-            }
-            catch (Exception ex)
-            {
-                throw new SettingsException(
-                    $"The key vault {KeyVaultName} is inaccessible or has been deleted. Check your run settings file.\n\nInner Exception Message:\n  {ex.Message.Split('\n').First()}");
-            }
-        }
-
-        private SecretClient GetKeyVaultClient()
-        {
-            /* For some reason the DefaultAzureCredential (SharedTokenCacheCredential / VisualStudioCredential) returns a 403 trying to access the key vault, even when access policies are configured correctly
-             * We either use one of the following to authenticate:
-             *  - var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions{ ExcludeSharedTokenCacheCredential = true, ExcludeVisualStudioCredential = true});
-             *  - var credential = new ChainedTokenCredential(new ManagedIdentityCredential(), new AzureCliCredential());
-             *
-             * See here for more info: https://docs.microsoft.com/en-us/answers/questions/74848/access-denied-to-first-party-service.html
-             */
-            var credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
-                {ExcludeSharedTokenCacheCredential = true, ExcludeVisualStudioCredential = true});
-
-            if (string.IsNullOrWhiteSpace(KeyVaultName))
-                throw new ArgumentException("The run setting file does not have a value for 'KeyVaultName'");
-
-            var keyVaultUri = $"https://{KeyVaultName}.vault.azure.net";
-            return new SecretClient(new Uri(keyVaultUri), credential);
-
+            // Only log the response in debug sessions, no point having all that info for a CI run
+#if DEBUG
+            var content = response.Content.ReadAsStringAsync().Result;
+            var json = JObject.Parse(content).ToString();
+            Logger.LogInformation($"Content:\n {json}");
+#endif
         }
 
 
+        protected dynamic GetResultsObject(HttpResponseMessage response)
+        {
+            var content = response.Content.ReadAsStringAsync().Result;
+            return JsonConvert.DeserializeObject(content);
+        }
 
 
 
         #region Azure Functions Local Host
+
         // We use one time setup and teardown to generate a single instance of the emulator across all classes that implement this base class
 
         private static object _functionsProcessLock = new object();
@@ -220,9 +245,10 @@ namespace DataPipelineTools.Functions.Tests
         public void StartFunctionsEmulator()
         {
             // If the run settings is referencing secrets via key vault, make sure we can connect
-            if (TestContext.Parameters.Names.Any(x => x.StartsWith("KeyVaultSecret") && !string.IsNullOrWhiteSpace(TestContext.Parameters[x].ToString())))
-                GetKeyVaultSecretNames();
-            
+            if (TestContext.Parameters.Names.Any(x =>
+                x.StartsWith("KeyVaultSecret") && !string.IsNullOrWhiteSpace(TestContext.Parameters[x].ToString())))
+                KeyVaultHelpers.GetKeyVaultSecretNames(KeyVaultName);
+
 
             // Start the local functions emulator if required. Use a lock so that multiple test classes inheriting from this base class share a
             // functions emulator instance
@@ -273,21 +299,23 @@ namespace DataPipelineTools.Functions.Tests
             var latestToolsVersion = toolsVersions.OrderBy(x => x).FirstOrDefault();
 
             if (latestToolsVersion == null)
-                throw new FileNotFoundException("The Azure Functions Core tools are not installed. Run the functions app locally to install the tools.");
+                throw new FileNotFoundException(
+                    "The Azure Functions Core tools are not installed. Run the functions app locally to install the tools.");
 
             const string args = "host start";
             string binDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
             binDir = binDir.Replace("DataPipelineTools.Functions.Tests", "DataPipelineTools.Functions");
 
-            binDir = @"C:\Users\Niall\src\sqlcollaborative\AzureDataPipelineTools\DataPipelineTools.Functions\bin\Debug";
+            binDir =
+                @"C:\Users\Niall\src\sqlcollaborative\AzureDataPipelineTools\DataPipelineTools.Functions\bin\Debug";
 
             ProcessStartInfo hostProcess = new ProcessStartInfo
             {
                 FileName = latestToolsVersion,
                 Arguments = args,
                 WorkingDirectory = binDir,
-                CreateNoWindow =  false,
+                CreateNoWindow = false,
                 WindowStyle = ProcessWindowStyle.Normal
             };
 
@@ -306,7 +334,7 @@ namespace DataPipelineTools.Functions.Tests
             LocalFunctionsHostProcess.WaitForExit();
             LocalFunctionsHostProcess.Dispose();
         }
-        
+
         #endregion Azure Functions Local Host
     }
 }

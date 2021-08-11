@@ -25,8 +25,13 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.Common
             if (dataLakeConnectionConfig.BaseUrl != null)
                 responseJson.Add("storageContainerUrl", dataLakeConnectionConfig.BaseUrl);
 
-            var paramatersJson = JObject.FromObject(parameters);
-            responseJson.Add("parameters", paramatersJson);
+            if (dataLakeConnectionConfig is DataLakeUserServicePrincipalConnectionConfig config)
+                responseJson.Add("clientId", config.ServicePrincipalClientId);
+
+            responseJson.Add("authType", dataLakeConnectionConfig.AuthType.ToString());
+
+            var parametersJson = JObject.FromObject(parameters);
+            responseJson.Add("parameters", parametersJson);
 
             return responseJson;
         }
