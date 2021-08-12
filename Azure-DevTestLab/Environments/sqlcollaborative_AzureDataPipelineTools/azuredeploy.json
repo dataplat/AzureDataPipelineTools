@@ -2,7 +2,14 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-
+        "environment": {
+            "type": "string",
+            "defaultValue": "AzureDataPipelineTools"
+        },
+        "environmentUser": {
+            "type": "string",
+            "defaultValue": "AzureDataPipelineTools"
+        },
         "gitProject": {
             "type": "string",
             "defaultValue": "AzureDataPipelineTools"
@@ -10,14 +17,20 @@
         "branch": {
             "type": "string"
         },
-        "commit": {
+        "gitShaShort": {
             "type": "string"
         },
-        "pullRequest": {
+        "gitSha": {
+            "type": "string"
+        },
+        "githubPullRequest": {
             "type": "string",
             "defaultValue": "N/A"
         },
         "location": {
+            "type": "string"
+        },
+        "resourceNameSuffix": {
             "type": "string"
         },
         "deploymentTimestamp": {
@@ -46,11 +59,11 @@
     },
     "variables": {
         "storageAccountApiVersion": "2021-04-01",
-        "adlsStorageAccountName": "[concat('adls', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
+        "adlsStorageAccountName": "[concat('adls', replace(toLower(parameters('resourceNameSuffix')), '_', ''))]",
         "adlsStorageAccountResourceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('adlsStorageAccountName'))]",
 
         "keyVaultApiVersion": "2021-04-01-preview",
-        "keyVaultName": "[concat('kv', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
+        "keyVaultName": "[concat('kv', replace(parameters('resourceNameSuffix'), '_', ''))]",
         "keyVaultSecret_ServicePrincipalClientSecret": "DevopsServicePrincipalClientSecret",
         "keyVaultSecret_StorageSaSToken": "StorageSaSToken",
         "keyVaultSecret_StorageKey": "StorageKey",
@@ -58,30 +71,57 @@
         "keyVaultSecret_applicationsInsightsKey": "ApplicationsInsightsKey",
 
         "applicationInsightsApiVersion": "2020-02-02-preview",
-        "applicationInsightsName": "[concat('appinsights', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
+        "applicationInsightsName": "[concat('appinsights', parameters('resourceNameSuffix'))]",
 
         "functionsAppApiVersion": "2019-08-01",
-        "functionsAppBlobStorageAccountName": "[concat('funcblob', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
-        "functionsAppName": "[concat('func', substring(uniqueString(parameters('branch')), 0, 4), 'xxxx', substring(parameters('commit'), 0, min(length(parameters('commit')), 7)))]",
+        "functionsAppBlobStorageAccountName": "[concat('blob', replace(toLower(parameters('resourceNameSuffix')), '_', ''))]",
+        "functionsAppName": "[concat('func', replace(parameters('resourceNameSuffix'), '_', '-'))]",
 
         "authorizationApiVersion": "2018-09-01-preview",
 
-        "deploymentScriptsVersion": "2020-10-01",
-        "deploymentScriptPermissionsName": "removeDeploymentServicePrincipalContributorPermissionFromResourceGroup",
+        // "deploymentScriptsVersion": "2020-10-01",
+        // "deploymentScriptPermissionsName": "removeDeploymentServicePrincipalContributorPermissionFromResourceGroup",
 
 
         
-        "owner": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '8e3af657-a8ff-443c-a75c-2fe8c4bcb635')]",
+        // "owner": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '8e3af657-a8ff-443c-a75c-2fe8c4bcb635')]",
         "contributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
         "reader": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')]",
-        "userAccessAdministrator": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '18d7d88d-d35e-4fb5-a5c3-7773c20a72d9')]",
+        // "userAccessAdministrator": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '18d7d88d-d35e-4fb5-a5c3-7773c20a72d9')]",
         "websiteContributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'de139f84-1756-47ae-9be6-808fbbe84772')]",
     
 
         "storageBlobDataContributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
-        "storageBlobDatareader": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')]"
+        "storageBlobDatareader": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')]",
+
+
+        "defaultTags": {
+                "Environment": "[parameters('environment')]",
+                "Environment User": "[parameters('environmentUser')]",
+                "Project": "[parameters('gitProject')]",
+                "Commit": "[parameters('gitShaShort')]",
+                "Commit Full": "[parameters('gitSha')]",
+                "Branch": "[parameters('branch')]",
+                "Pull Request": "[parameters('githubPullRequest')]",
+                "Create Date Time": "[parameters('deploymentTimestamp')]"
+            }
     },
     "resources": [
+
+        /********************************************************************************************************************************************
+        ****    Add tags to the resource group that is created for the lab
+        ********************************************************************************************************************************************/
+        {
+            "type": "Microsoft.Resources/tags",
+            "name": "default",
+            "apiVersion": "2021-04-01",
+            "properties": {
+                "tags": "[variables('defaultTags')]"
+            }
+        },
+        
+
+
         /********************************************************************************************************************************************
         ****    Dev-Ops Service Principal Permissions (Things not granted by owner/contributor at the RG level)
         ********************************************************************************************************************************************/
@@ -268,14 +308,9 @@
                 "name": "Standard_LRS"
             },
             "kind": "StorageV2",
-            "tags": {
-                "Git Project": "[parameters('gitProject')]",
-                "Commit": "[parameters('commit')]",
-                "Branch": "[parameters('branch')]",
-                "Pull Request": "[parameters('pullRequest')]",
-                "Create Date Time": "[parameters('deploymentTimestamp')]",
-                "Git Project Resource Code": "ADLS"
-            },
+            "tags": "[union(variables('defaultTags'), 
+                            createObject('Resource Deccription', 'ADLS Integration Test Data Account')
+                           )]",
             "resources": [
                 // Add a container to the storage account
                 {
@@ -285,14 +320,9 @@
                     "properties": {
                         "publicAccess": "None"
                     },
-                    "tags": {
-                        "Git Project": "[parameters('gitProject')]",
-                        "Commit": "[parameters('commit')]",
-                        "Branch": "[parameters('branch')]",
-                        "Pull Request": "[parameters('pullRequest')]",
-                        "Create Date Time": "[parameters('deploymentTimestamp')]",
-                        "Git Project Resource Code": "ADLSTestContainer"
-                    },
+                    "tags": "[union(variables('defaultTags'), 
+                                    createObject('Resource Deccription', 'ADLS Integration Test Data Container')
+                                   )]",
                     "dependsOn": [
                         "[variables('adlsStorageAccountName')]"
                     ]
@@ -310,15 +340,9 @@
             "apiVersion": "[variables('keyVaultApiVersion')]",
             "name": "[variables('keyVaultName')]",
             "location": "[resourceGroup().location]",
-            "tags": {
-                "Git Project": "[parameters('gitProject')]",
-                "Commit": "[parameters('commit')]",
-                "Branch": "[parameters('branch')]",
-                "Pull Request": "[parameters('pullRequest')]",
-                "Create Date Time": "[parameters('deploymentTimestamp')]",
-                "Git Project Resource Code": "KeyVault",
-                "Tenant Id": "[subscription().tenantId]"
-            },
+            "tags": "[union(variables('defaultTags'), 
+                            createObject('Resource Deccription', 'Key Vault for Integration Testing')
+                           )]",
             "dependsOn": [
                 "[variables('adlsStorageAccountName')]",
                 "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'))]",
@@ -427,14 +451,9 @@
             "type": "microsoft.insights/components",
             "apiVersion": "[variables('applicationInsightsApiVersion')]",
             "location": "[parameters('location')]",
-            "tags": {
-                "Git Project": "[parameters('gitProject')]",
-                "Commit": "[parameters('commit')]",
-                "Branch": "[parameters('branch')]",
-                "Pull Request": "[parameters('pullRequest')]",
-                "Create Date Time": "[parameters('deploymentTimestamp')]",
-                "Git Project Resource Code": "ApplicationInsights"
-            },
+            "tags": "[union(variables('defaultTags'), 
+                            createObject('Resource Deccription', 'Application Insights')
+                           )]",
             "properties": {
                 "ApplicationId": "[variables('applicationInsightsName')]",
                 "Application_Type": "web",
@@ -452,14 +471,9 @@
             "type": "Microsoft.Storage/storageAccounts",
             "name": "[variables('functionsAppBlobStorageAccountName')]",
             "location": "[parameters('location')]",
-            "tags": {
-                "Git Project": "[parameters('gitProject')]",
-                "Commit": "[parameters('commit')]",
-                "Branch": "[parameters('branch')]",
-                "Pull Request": "[parameters('pullRequest')]",
-                "Create Date Time": "[parameters('deploymentTimestamp')]",
-                "Git Project Resource Code": "FunctionsAppStorage"
-            },
+            "tags": "[union(variables('defaultTags'), 
+                            createObject('Resource Deccription', 'BLOB Storage for Functions Apps')
+                           )]",
             "sku": {
                 "name": "Standard_LRS"
             },
@@ -483,14 +497,10 @@
                 "[resourceId('Microsoft.Storage/storageAccounts', variables('functionsAppBlobStorageAccountName'))]",
                 "[resourceId('microsoft.insights/components', variables('applicationInsightsName'))]"
             ],
-            "tags": {
-                "Git Project": "[parameters('gitProject')]",
-                "Commit": "[parameters('commit')]",
-                "Branch": "[parameters('branch')]",
-                "Pull Request": "[parameters('pullRequest')]",
-                "Create Date Time": "[parameters('deploymentTimestamp')]",
-                "Git Project Resource Code": "FunctionsApp"
-            },
+            
+            "tags": "[union(variables('defaultTags'), 
+                            createObject('Resource Deccription', 'Functions App hosting the Azure Data Pipeline Tools functions')
+                           )]",
             "properties": {
                 "siteConfig": {
                     "appSettings": [
