@@ -5,13 +5,13 @@ name: Build and Run Integration Tests on Azure DevTest Labs
 # Controls when the action will run. 
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
+  pull_request:
+    branches:
+    - main
   push:
     branches:
     - main
     - feature/*
-  pull_request:
-    branches:
-    - main
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -64,28 +64,32 @@ jobs:
       with:
         creds: '${{ secrets.AZURE_DEV_TEST_LABS_CREDENTIALS }}'
 
-
+    # Find the PR details
+    - uses: jwalton/gh-find-current-pr@v1
+      id: findPr
+      with:
+        state: open
 
     # --raw-output is requiored on all jq commands that select strings, otherwise they come out with the quotes, which is interpreted as a command, and it likely won't exist!
     - name: Create DevTest Labs Environment
       id: create-devtest-labs-environment
       uses: azure/CLI@v1
+      env:
+        GITHUB_PR_NUMBER: ${{ steps.findPr.outputs.pr }}
+        GITHUB_PR_TITLE: ${{ steps.findPr.outputs.title }}
       with:
         # azcliversion: 2.24.0  # Versions prior to this have a bug creating environments
         # This runs in a container, so all output is passed back using 'echo "::set-output name=OUTPUT_VAR_NAME::value here"', as files created won't persist.
+        # Note: Environment variables passed in (as env:... above) break if they contain quotes and newlines, eg multiline JSON. The export commands below work correctly as long as the bash 
+        # quoting rules are followed.
         inlineScript: |
-          # We need the secrets in an environment variable so they get passed to our shell script that does the work
           export SERVICE_PRINCIPAL_CREDENTIALS=$'${{ secrets.AZURE_DEV_TEST_LABS_CREDENTIALS }}'
           export ADDITIONAL_PRINCIPALS=$'${{ secrets.ADDITIONAL_PRINCIPALS }}'
-
           # Execute the script to create the dev test lab
           chmod +x ./.github/workflows/deploy.sh
           ./.github/workflows/deploy.sh
           
         
-          
-    
-    
     # Runs a set of commands using the runners shell
     - name: Show create environment outputs
       run: |
