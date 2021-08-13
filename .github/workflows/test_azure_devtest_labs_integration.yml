@@ -67,8 +67,6 @@ jobs:
     # Find the PR details
     - uses: jwalton/gh-find-current-pr@v1
       id: findPr
-      with:
-        state: open
 
     # --raw-output is requiored on all jq commands that select strings, otherwise they come out with the quotes, which is interpreted as a command, and it likely won't exist!
     - name: Create DevTest Labs Environment
@@ -143,10 +141,35 @@ jobs:
       run: dotnet test --no-build --configuration ${{ env.BUILD_CONFIGURATION }} --filter TestCategory=IntegrationTest --output ./output --results-directory ./test-results --verbosity normal --logger "trx;LogFileName=integration-test-results.trx" --settings ${{ env.RUN_SETTINGS_FILENAME }}
 
 
+    # --raw-output is requiored on all jq commands that select strings, otherwise they come out with the quotes, which is interpreted as a command, and it likely won't exist!
+    - name: Teardown DevTest Labs Environment
+      id: teardown-devtest-labs-environment
+      if: ${{ (github.event_name != 'workflow_dispatch') && (success() || failure()) }}    # run this step even if previous step failed
+      uses: azure/CLI@v1
+      env:
+        ENVIRONMENT_INSTANCE_NAME: ${{ steps.create-devtest-labs-environment.outputs.ENVIRONMENT_INSTANCE_NAME }}
+        ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME: ${{ steps.create-devtest-labs-environment.outputs.ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME }}
+      with:
+        # This runs in a container, so all output is passed back using 'echo "::set-output name=OUTPUT_VAR_NAME::value here"', as files created won't persist.
+        # Note: Environment variables passed in (as env:... above) break if they contain quotes and newlines, eg multiline JSON. The export commands below work correctly as long as the bash 
+        # quoting rules are followed.
+        inlineScript: |
+          # Get the prvisioing state for the RG created for the lab
+          echo "Lab Name: $ENVIRONMENT_INSTANCE_NAME"
+          echo "Checking provisioning state of lab resource group $ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME"
+          PROVISIONING_STATE=$(az deployment group list --resource-group $ENVIRONMENT_INSTANCE_RESOURCE_GROUP_NAME --query 'sort_by([*], &properties.timestamp)[0].properties.provisioningState' | sed -e 's/^"//' -e 's/"$//')
+
+          echo "Povisioning State: $PROVISIONING_STATE"
+
+          if [ ! -z "$PROVISIONING_STATE" ]; then
+            echo "Deleting lab $ENVIRONMENT_INSTANCE_NAME"
+            az lab environment delete --resource-group "$RESOURCE_GROUP" --lab-name "$LAB_NAME" --name "$ENVIRONMENT_INSTANCE_NAME"
+          fi
+
 
     - name: Publish Test Report
       uses: dorny/test-reporter@v1
-      if: success() || failure()    # run this step even if previous step failed
+      if: success() || failure() # run this step even if previous step failed
       with:
         name: Tests                 # Name of the check run which will be created
         path: ./test-results/*.trx                 # Path to test results
