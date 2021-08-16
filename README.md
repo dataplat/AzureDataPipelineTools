@@ -1,3 +1,5 @@
+![Build Status](https://github.com/sqlcollaborative/AzureDataPipelineTools/actions/workflows/test_azure_devtest_labs_integration.yml/badge.svg)
+
 # AzureDataPipelineTools
 A collection of extensions and helpers to make development of Azure Data Factory simpler and faster. This project was created to allow the community to share reliable methods to extend data factory functionality using Azure Functions, or Data Factory patterns as reuable samples.
 
