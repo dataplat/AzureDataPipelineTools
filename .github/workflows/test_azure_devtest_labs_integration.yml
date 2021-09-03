@@ -165,7 +165,13 @@ jobs:
             echo "Deleting lab $ENVIRONMENT_INSTANCE_NAME"
             az lab environment delete --resource-group "$RESOURCE_GROUP" --lab-name "$LAB_NAME" --name "$ENVIRONMENT_INSTANCE_NAME"
           fi
-
+    
+    - name: Publish Artifacts
+      uses: actions/upload-artifact@v2
+      if: success()
+      with:
+        name: AzureDataPipelineTools_Functions
+        path: './${{ env.FUNCTIONS_PROJECT_NAME }}/bin/${{ env.BUILD_CONFIGURATION }}'
 
     - name: Publish Test Report
       uses: dorny/test-reporter@v1
