@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
@@ -67,36 +68,50 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             //return req.Query.Keys.ToDictionary(k => k, req.GetQueryParameter);
         }
 
+        internal struct ErrorMessage
+        {
+            private const string OneMandatoryParamMissing = "Mandatory parameter '{0}' was not provided.";
+            private const string ParamMustHaveValue = "The parameter '{0}' must have a value if it is provided.";
+
+            internal static string AccountParamIsMandatory = string.Format(OneMandatoryParamMissing, AccountParam);
+            internal static string ContainerParamIsMandatory = string.Format(OneMandatoryParamMissing, ContainerParam);
+            internal static string UserDefinedServicePrincipalParamsMissing =
+                $"To use a user defined service principal you must supply valid values for the the parameters '{ServicePrincipalClientIdParam}' and '{ServicePrincipalClientSecretParam}'";
+
+            internal static string SasTokenParamMustHaveValue = string.Format(ErrorMessage.ParamMustHaveValue, SasTokenParam);
+            internal static string AccountKeyParamMustHaveValue = string.Format(ErrorMessage.ParamMustHaveValue, AccountKeyParam);
+
+            internal static string MultipleAuthTypesUsed =
+                "Authentication parameters are invalid. Authentication params must be one of the following sets\n"
+                + "  - None (for authentication using the Azure Functions Service Principal)\n"
+                + $"  - {ServicePrincipalClientIdParam}, {ServicePrincipalClientSecretParam}\n"
+                + $"  - {SasTokenParam}\n"
+                + $"  - {AccountKeyParam}\n";
+        }
 
         private void ValidateParameters(IReadOnlyDictionary<string, QueryParameter> parameters)
         {
             if (!parameters[AccountParam].Exists || parameters[AccountParam].IsNullOrWhiteSpace)
-                throw new ArgumentException($"Mandatory parameter '{AccountParam}' was not provided.");
+                throw new ArgumentException(ErrorMessage.AccountParamIsMandatory);
 
             if (!parameters[ContainerParam].Exists || parameters[ContainerParam].IsNullOrWhiteSpace)
-                throw new ArgumentException($"Mandatory parameter '{ContainerParam}' was not provided.");
+                throw new ArgumentException(ErrorMessage.ContainerParamIsMandatory);
 
             // We either need both params for a user defined service principal, or none
             var userServicePrincipalParams = new[] {parameters[ServicePrincipalClientIdParam], parameters[ServicePrincipalClientSecretParam]};
             if (userServicePrincipalParams.Count(x => x.Exists) == 1 || userServicePrincipalParams.Count(x => x.Exists && x.IsNullOrWhiteSpace) > 0)
-                throw new ArgumentException($"To use a user defined service principal you must supply valid values for the the parameters '{ServicePrincipalClientIdParam}' and '{ServicePrincipalClientSecretParam}'");
+                throw new ArgumentException(ErrorMessage.UserDefinedServicePrincipalParamsMissing);
 
             // We need zero or one auth types (if nothing is specified we use the functions app service principal)
             var secrets = new[] {parameters[ServicePrincipalClientSecretParam], parameters[SasTokenParam], parameters[AccountKeyParam]};
             if (secrets.Count(x => x.Exists) > 1)
-                throw new ArgumentException(
-                    "Authentication parameters are invalid. Authentication params must be one of the following sets\n"
-                    + "  - None (for authentication using the Azure Functions Service Principal)\n"
-                    + $"  - {ServicePrincipalClientIdParam}, {ServicePrincipalClientSecretParam}\n"
-                    + $"  - {SasTokenParam}\n"
-                    + $"  - {AccountKeyParam}\n"
-                );
+                throw new ArgumentException(ErrorMessage.MultipleAuthTypesUsed);
 
             // Check any sas token or account key that was passed is not null, empty or whitespace
             if (parameters[SasTokenParam].Exists && parameters[SasTokenParam].IsNullOrWhiteSpace)
-                throw new ArgumentException($"Mandatory parameter '{SasTokenParam}' does not have a value.");
+                throw new ArgumentException( ErrorMessage.SasTokenParamMustHaveValue);
             if (parameters[AccountKeyParam].Exists && parameters[AccountKeyParam].IsNullOrWhiteSpace)
-                throw new ArgumentException($"Mandatory parameter '{AccountKeyParam}' does not have a value.");
+                throw new ArgumentException( ErrorMessage.AccountKeyParamMustHaveValue);
 
 
             // If secrets are specified without a ref to a Key Vault, log a warning

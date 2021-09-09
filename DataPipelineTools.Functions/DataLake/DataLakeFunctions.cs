@@ -24,10 +24,9 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             _serviceFactory = serviceFactory;
         }
 
-
-        [FunctionName("DataLakeGetItems")]
+        [FunctionName("DataLake-GetItems")]
         public async Task<IActionResult> DataLakeGetItems(
-            [HttpTrigger(AuthorizationLevel.Function, "get" /*, "post"*/, Route = null)] HttpRequest req)
+            [HttpTrigger(AuthorizationLevel.Function, "get" /*, "post"*/, Route = "DataLake/GetItems")] HttpRequest req)
         {
             req.GetQueryParameterDictionary();
 
@@ -51,7 +50,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             catch (ArgumentException ex)
             {
                 _logger.LogError(ex, ex.Message);
-                return new BadRequestObjectResult(ex.Message);
+                return new BadRequestObjectResult($"{{ \"error\": \"{ex.Message}\" }}");
             }
             catch (Exception ex)
             {
@@ -62,9 +61,9 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
 
 
 
-        [FunctionName("DataLakeCheckPathCase")]
+        [FunctionName("DataLake-CheckPathCase")]
         public async Task<IActionResult> DataLakeCheckPathCase(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)] HttpRequest req)
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "DataLake/CheckPathCase")] HttpRequest req)
         {
             var userAgentKey = req.Headers.Keys.FirstOrDefault(k => k.ToLower() == "user-agent" || k.ToLower() == "useragent");
             _logger.LogInformation($"C# HTTP trigger function processed a request [User Agent: { (userAgentKey == null ? "Unknown" : req.Headers[userAgentKey].ToString()) }].");

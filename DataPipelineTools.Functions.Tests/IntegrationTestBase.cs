@@ -225,8 +225,16 @@ namespace DataPipelineTools.Functions.Tests
             if (string.IsNullOrWhiteSpace(content))
                 return;
 
-            var json = JObject.Parse(content).ToString();
-            Logger.LogInformation($"Content:\n {json}");
+            try
+            {
+
+                var json = JObject.Parse(content).ToString();
+                Logger.LogInformation($"Content:\n{json}");
+            }
+            catch
+            {
+                Logger.LogInformation($"Content:\n  '{content}'");
+            }
 #endif
         }
 
@@ -320,7 +328,8 @@ namespace DataPipelineTools.Functions.Tests
                 Arguments = args,
                 WorkingDirectory = binDir,
                 CreateNoWindow = false,
-                WindowStyle = ProcessWindowStyle.Normal
+                WindowStyle = ProcessWindowStyle.Normal,
+                UseShellExecute = true
             };
 
             LocalFunctionsHostProcess = Process.Start(hostProcess);

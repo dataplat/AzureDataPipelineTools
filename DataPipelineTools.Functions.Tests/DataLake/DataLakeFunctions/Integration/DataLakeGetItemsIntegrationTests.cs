@@ -15,7 +15,7 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
     [Parallelizable(ParallelScope.Children)]
     public class DataLakeGetItemsIntegrationTests : IntegrationTestBase
     {
-        protected override string FunctionUri => $"{FunctionsAppUrl}/api/DataLakeGetItems";
+        protected override string FunctionUri => $"{FunctionsAppUrl}/api/DataLake/GetItems";
 
         [SetUp]
         public void Setup()
@@ -30,6 +30,39 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
 
 
 
+        [Test]
+        public async Task Test_FunctionReturnsError_With_MissingAccountParam()
+        {
+            var parameters = new Dictionary<string, string>
+            {
+                {DataLakeConfigFactory.ContainerParam, StorageContainerName}
+            };
+            var response = await RunQueryFromParameters(parameters);
+            LogContent(response);
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+
+            // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
+            dynamic results = GetResultsObject(response);
+            Assert.IsNotNull(results.error);
+            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.AccountParamIsMandatory,results.error.ToString());
+        }
+
+        [Test]
+        public async Task Test_FunctionReturnsError_With_MissingContainerParam()
+        {
+            var parameters = new Dictionary<string, string>
+            {
+                {DataLakeConfigFactory.AccountParam, StorageAccountName}
+            };
+            var response = await RunQueryFromParameters(parameters);
+            LogContent(response);
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+
+            // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
+            dynamic results = GetResultsObject(response);
+            Assert.IsNotNull(results.error);
+            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.ContainerParamIsMandatory, results.error.ToString());
+        }
 
         [Test]
         public async Task Test_FunctionIsRunnable_With_FunctionsServicePrincipalAuth()
@@ -47,11 +80,6 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             dynamic results = GetResultsObject(response);
             Assert.AreEqual(AuthType.FunctionsServicePrincipal, (AuthType) results.authType);
         }
-
-
-
-
-
 
         [Test]
         public async Task Test_FunctionIsRunnable_With_UserServicePrincipalAuthAndPlainTextKey()
@@ -108,6 +136,11 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             };
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+
+            // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
+            dynamic results = GetResultsObject(response);
+            Assert.IsNotNull(results.error);
+            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.UserDefinedServicePrincipalParamsMissing, results.error.ToString());
         }
 
         [Test]
@@ -126,6 +159,11 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             };
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+
+            // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
+            dynamic results = GetResultsObject(response);
+            Assert.IsNotNull(results.error);
+            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.UserDefinedServicePrincipalParamsMissing, results.error.ToString());
         }
 
 
@@ -229,6 +267,11 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             };
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+
+            // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
+            dynamic results = GetResultsObject(response);
+            Assert.IsNotNull(results.error);
+            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.SasTokenParamMustHaveValue, results.error.ToString());
         }
 
         [Test]
@@ -303,6 +346,11 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             };
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+
+            // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
+            dynamic results = GetResultsObject(response);
+            Assert.IsNotNull(results.error);
+            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.AccountKeyParamMustHaveValue, results.error.ToString());
         }
 
 
@@ -367,6 +415,9 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(expectedResponse, response.StatusCode);
 
+            // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
+            dynamic results = GetResultsObject(response);
+
             // If the response was ok, check the correct auth type got used
             if (response.StatusCode == HttpStatusCode.OK)
             {
@@ -378,9 +429,13 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
                 else if (useAccountKey)
                     expectedAuthType = AuthType.AccountKey;
 
-                // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
-                dynamic results = GetResultsObject(response);
+                
                 Assert.AreEqual(expectedAuthType, (AuthType) results.authType);
+            }
+            // If it was a bad request, check the error message is set correctly
+            else if (response.StatusCode == HttpStatusCode.BadRequest)
+            {
+                Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.MultipleAuthTypesUsed, results.error.ToString());
             }
         }
 
