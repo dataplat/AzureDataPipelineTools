@@ -7,15 +7,21 @@ using Azure;
 using Azure.Identity;
 using Azure.Storage;
 using SqlCollaborative.Azure.DataPipelineTools.Common;
+using Microsoft.Extensions.Options;
 
 namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
 {
     public class DataLakeClientFactory : IDataLakeClientFactory
     {
         private readonly ILogger _logger;
-        public DataLakeClientFactory(ILogger<DataLakeClientFactory> logger)
+        private readonly KeyVaultHelpers _keyVaultHelper;
+        private readonly AzureIdentityHelper _azureIdentityHelper;
+
+        public DataLakeClientFactory(ILogger<DataLakeClientFactory> logger, KeyVaultHelpers keyVaultHelper, AzureIdentityHelper azureIdentityHelper)
         {
             _logger = logger;
+            _keyVaultHelper = keyVaultHelper;
+            _azureIdentityHelper = azureIdentityHelper;
         }
 
         public DataLakeFileSystemClient GetDataLakeClient(IDataLakeConnectionConfig dataLakeConnectionConfig)
@@ -68,9 +74,9 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
             // If we have an Azure Key Vault reference, we get the actual secret from there
             var secret = string.IsNullOrWhiteSpace(connectionConfig.KeyVault)
                 ? connectionConfig.ServicePrincipalClientSecret
-                : KeyVaultHelpers.GetKeyVaultSecretValue(connectionConfig.KeyVault, connectionConfig.ServicePrincipalClientSecret);
+                : _keyVaultHelper.GetKeyVaultSecretValue(connectionConfig.KeyVault, connectionConfig.ServicePrincipalClientSecret);
 
-            var cred = new ClientSecretCredential(AzureIdentityHelper.TenantId, connectionConfig.ServicePrincipalClientId, secret);
+            var cred = new ClientSecretCredential(_azureIdentityHelper.TenantId, connectionConfig.ServicePrincipalClientId, secret);
             _logger.LogInformation($"Using credential Type: {cred.GetType().Name}");
 
             return new DataLakeFileSystemClient(new Uri(connectionConfig.BaseUrl), cred);
@@ -80,7 +86,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
             // If we have an Azure Key Vault reference, we get the actual secret from there
             var secret = string.IsNullOrWhiteSpace(connectionConfig.KeyVault)
                 ? connectionConfig.SasToken
-                : KeyVaultHelpers.GetKeyVaultSecretValue(connectionConfig.KeyVault, connectionConfig.SasToken);
+                : _keyVaultHelper.GetKeyVaultSecretValue(connectionConfig.KeyVault, connectionConfig.SasToken);
 
             var cred = new AzureSasCredential(secret);
             _logger.LogInformation($"Using credential Type: {cred.GetType().Name}");
@@ -94,7 +100,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
             // If we have an Azure Key Vault reference, we get the actual secret from there
             var secret = string.IsNullOrWhiteSpace(connectionConfig.KeyVault)
                 ? connectionConfig.AccountKey
-                : KeyVaultHelpers.GetKeyVaultSecretValue(connectionConfig.KeyVault, connectionConfig.AccountKey);
+                : _keyVaultHelper.GetKeyVaultSecretValue(connectionConfig.KeyVault, connectionConfig.AccountKey);
 
             var cred = new StorageSharedKeyCredential(connectionConfig.Account, secret);
             _logger.LogInformation($"Using credential Type: {cred.GetType().Name}");

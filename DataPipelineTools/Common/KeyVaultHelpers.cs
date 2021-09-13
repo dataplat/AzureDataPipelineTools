@@ -4,18 +4,27 @@ using System.Collections.Generic;
 using System.Linq;
 using Azure;
 using Azure.Core;
+using Microsoft.Extensions.Options;
+using SqlCollaborative.Azure.DataPipelineTools.DataLake;
 
 namespace SqlCollaborative.Azure.DataPipelineTools.Common
 {
-    public static class KeyVaultHelpers
+    public class KeyVaultHelpers
     {
-        public static string GetKeyVaultSecretValue(string keyVaultName, string secretName)
+        /// <summary>
+        /// Must have a constructor explicitly defined or the DI container does not create the object.
+        /// </summary>
+        public KeyVaultHelpers()
+        {
+        }
+
+        public string GetKeyVaultSecretValue(string keyVaultName, string secretName)
         {
             var client = GetKeyVaultClient(keyVaultName);
             return GetKeyVaultSecretValue(client, keyVaultName, secretName);
         }
 
-        public static string GetKeyVaultSecretValue(SecretClient client, string keyVaultName, string secretName)
+        public string GetKeyVaultSecretValue(SecretClient client, string keyVaultName, string secretName)
         {
             try
             {
@@ -30,7 +39,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Common
             }
         }
 
-        public static IEnumerable<string> GetKeyVaultSecretNames(string keyVaultName)
+        public IEnumerable<string> GetKeyVaultSecretNames(string keyVaultName)
         {
             var client = GetKeyVaultClient(keyVaultName);
             try
@@ -45,7 +54,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Common
             }
         }
 
-        public static SecretClient GetKeyVaultClient(string keyVaultName)
+        public SecretClient GetKeyVaultClient(string keyVaultName)
         {
             // Exclude VisualStudioCredentials from the options or it does not work when debugging locally. See the function comment for more info.
             var cred = AzureIdentityHelper.GetDefaultAzureCredential(true);
@@ -53,7 +62,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Common
 
         }
 
-        public static SecretClient GetKeyVaultClient(TokenCredential cred, string keyVaultName)
+        public SecretClient GetKeyVaultClient(TokenCredential cred, string keyVaultName)
         {
             if (string.IsNullOrWhiteSpace(keyVaultName))
                 throw new ArgumentException("The value for parameter 'keyVaultName' cannot be a null, empty or whitespace string");

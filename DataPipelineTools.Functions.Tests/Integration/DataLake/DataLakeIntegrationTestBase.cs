@@ -1,22 +1,20 @@
-using DataPipelineTools.Tests.Common;
-using Microsoft.Extensions.Logging;
-using NUnit.Framework;
-using SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using NUnit.Framework;
 using SqlCollaborative.Azure.DataPipelineTools.DataLake.Model;
+using SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake;
 
-namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integration
+namespace DataPipelineTools.Functions.Tests.Integration.DataLake
 {
-    [TestFixture]
-    [Category(nameof(TestType.IntegrationTest))]
-    [Parallelizable(ParallelScope.Children)]
-    public class DataLakeGetItemsIntegrationTests : IntegrationTestBase
+    /// <summary>
+    /// Base class for integration tests against data lake functions. The test here test the authentication, so are re-usable over
+    /// all data lake functions.
+    /// </summary>
+    public abstract class DataLakeIntegrationTestBase : IntegrationTestBase
     {
-        protected override string FunctionUri => $"{FunctionsAppUrl}/api/DataLake/GetItems";
-
         [SetUp]
         public void Setup()
         {
@@ -35,7 +33,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
         {
             var parameters = new Dictionary<string, string>
             {
-                {DataLakeConfigFactory.ContainerParam, StorageContainerName}
+                {DataLakeConfigFactory.ContainerParam, StorageContainerName},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             LogContent(response);
@@ -52,7 +51,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
         {
             var parameters = new Dictionary<string, string>
             {
-                {DataLakeConfigFactory.AccountParam, StorageAccountName}
+                {DataLakeConfigFactory.AccountParam, StorageAccountName},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             LogContent(response);
@@ -70,7 +70,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             var parameters = new Dictionary<string, string>
             {
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
-                {DataLakeConfigFactory.ContainerParam, StorageContainerName}
+                {DataLakeConfigFactory.ContainerParam, StorageContainerName},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             LogContent(response);
@@ -90,6 +91,7 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
                 {DataLakeConfigFactory.ServicePrincipalClientIdParam, ServicePrincipalName},
                 {DataLakeConfigFactory.ServicePrincipalClientSecretParam, ServicePrincipalSecretKey},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             LogContent(response);
@@ -109,7 +111,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
                 {DataLakeConfigFactory.ServicePrincipalClientIdParam, ServicePrincipalName},
                 {DataLakeConfigFactory.ServicePrincipalClientSecretParam, ServicePrincipalSecretKeyName},
-                {DataLakeConfigFactory.KeyVaultParam, KeyVaultName}
+                {DataLakeConfigFactory.KeyVaultParam, KeyVaultName},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             LogContent(response);
@@ -132,7 +135,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
                 {DataLakeConfigFactory.ServicePrincipalClientIdParam, clientId},
-                {DataLakeConfigFactory.ServicePrincipalClientSecretParam, ServicePrincipalSecretKey}
+                {DataLakeConfigFactory.ServicePrincipalClientSecretParam, ServicePrincipalSecretKey},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
@@ -155,7 +159,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
                 {DataLakeConfigFactory.ServicePrincipalClientIdParam, ServicePrincipalName},
-                {DataLakeConfigFactory.ServicePrincipalClientSecretParam, clientSecret}
+                {DataLakeConfigFactory.ServicePrincipalClientSecretParam, clientSecret},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
@@ -174,7 +179,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             {
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
-                {DataLakeConfigFactory.ServicePrincipalClientSecretParam, ServicePrincipalSecretKey}
+                {DataLakeConfigFactory.ServicePrincipalClientSecretParam, ServicePrincipalSecretKey},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
@@ -187,7 +193,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             {
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
-                {DataLakeConfigFactory.ServicePrincipalClientIdParam, ServicePrincipalName}
+                {DataLakeConfigFactory.ServicePrincipalClientIdParam, ServicePrincipalName},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
@@ -201,7 +208,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
                 {DataLakeConfigFactory.ServicePrincipalClientIdParam, Guid.NewGuid().ToString()},
-                {DataLakeConfigFactory.ServicePrincipalClientSecretParam, ServicePrincipalSecretKey}
+                {DataLakeConfigFactory.ServicePrincipalClientSecretParam, ServicePrincipalSecretKey},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
@@ -223,7 +231,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             {
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
-                {DataLakeConfigFactory.SasTokenParam, StorageContainerSasToken}
+                {DataLakeConfigFactory.SasTokenParam, StorageContainerSasToken},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             LogContent(response);
@@ -242,7 +251,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
                 {DataLakeConfigFactory.SasTokenParam, StorageContainerSasTokenName},
-                {DataLakeConfigFactory.KeyVaultParam, KeyVaultName}
+                {DataLakeConfigFactory.KeyVaultParam, KeyVaultName},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             LogContent(response);
@@ -263,7 +273,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             {
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
-                {DataLakeConfigFactory.SasTokenParam, sasToken}
+                {DataLakeConfigFactory.SasTokenParam, sasToken},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
@@ -281,7 +292,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             {
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
-                {DataLakeConfigFactory.SasTokenParam, RandomString(20)}
+                {DataLakeConfigFactory.SasTokenParam, RandomString(20)},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
@@ -302,7 +314,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             {
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
-                {DataLakeConfigFactory.AccountKeyParam, StorageAccountAccessKey}
+                {DataLakeConfigFactory.AccountKeyParam, StorageAccountAccessKey},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             LogContent(response);
@@ -321,7 +334,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
                 {DataLakeConfigFactory.AccountKeyParam, StorageAccountAccessKeyName},
-                {DataLakeConfigFactory.KeyVaultParam, KeyVaultName}
+                {DataLakeConfigFactory.KeyVaultParam, KeyVaultName},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             LogContent(response);
@@ -342,7 +356,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             {
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
-                {DataLakeConfigFactory.AccountKeyParam, accountKey}
+                {DataLakeConfigFactory.AccountKeyParam, accountKey},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
@@ -361,7 +376,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             {
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
-                {DataLakeConfigFactory.AccountKeyParam, RandomString(20)}
+                {DataLakeConfigFactory.AccountKeyParam, RandomString(20)},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
@@ -399,7 +415,7 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             {
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
                 {DataLakeConfigFactory.ContainerParam, StorageContainerName},
-                //{DataLakeConfigFactory.AccountKeyParam, RandomString(20)}
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             if (useUserServicePrincipal)
             {
@@ -450,7 +466,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             var parameters = new Dictionary<string, string>
             {
                 {DataLakeConfigFactory.AccountParam, accountName},
-                {DataLakeConfigFactory.ContainerParam, StorageContainerName}
+                {DataLakeConfigFactory.ContainerParam, StorageContainerName},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
@@ -466,7 +483,8 @@ namespace DataPipelineTools.Functions.Tests.DataLake.DataLakeFunctions.Integrati
             var parameters = new Dictionary<string, string>
             {
                 {DataLakeConfigFactory.AccountParam, StorageAccountName},
-                {DataLakeConfigFactory.ContainerParam, containerName}
+                {DataLakeConfigFactory.ContainerParam, containerName},
+                {DataLakeConfigFactory.PathParam, "/"}
             };
             var response = await RunQueryFromParameters(parameters);
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);

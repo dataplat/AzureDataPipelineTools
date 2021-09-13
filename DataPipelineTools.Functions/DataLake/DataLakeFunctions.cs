@@ -55,6 +55,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             catch (Exception ex)
             {
                 _logger.LogError(ex, ex.Message); // The simple message goes in the trace, but the full exception details are in the exception logging in Application Insights
+                
                 return new BadRequestObjectResult("{ \"error\": \"An error occurred, see the Azure Function logs for more details\" }");
             }
         }
@@ -98,7 +99,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             catch (ArgumentException ex)
             {
                 _logger.LogError(ex.Message);
-                return new BadRequestObjectResult(ex.Message);
+                return new BadRequestObjectResult($"{{ \"error\": \"{ex.Message}\" }}");
             }
             catch (Exception ex)
             {

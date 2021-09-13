@@ -38,7 +38,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
         public const string AccountParam = "account";
         public const string ContainerParam = "container";
         public const string ServicePrincipalClientIdParam = "spnClientId";
-        public const string ServicePrincipalClientSecretParam = "spnClient";
+        public const string ServicePrincipalClientSecretParam = "spnClientSecret";
         public const string SasTokenParam = "sasToken";
         public const string AccountKeyParam = "accountKey";
         public const string KeyVaultParam = "keyVault";

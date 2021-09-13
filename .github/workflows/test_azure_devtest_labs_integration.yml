@@ -107,7 +107,7 @@ jobs:
         echo '${{ steps.create-devtest-labs-environment.outputs.RUN_SETTINGS }}' > ${{ env.RUN_SETTINGS_FILENAME }}
 
    
-     # Install AZCopy and copy sample files into the data lake
+    # Install AZCopy and copy sample files into the data lake
     - name: Install azcopy
       uses: kheiakiyama/install-azcopy-action@v1.0.3
       with:
@@ -138,6 +138,8 @@ jobs:
 
 
     - name: Run Integration Tests
+      env: 
+        TENANT_ID: ${{ steps.create-devtest-labs-environment.outputs.TENANTID }}
       run: dotnet test --no-build --configuration ${{ env.BUILD_CONFIGURATION }} --filter TestCategory=IntegrationTest --output ./output --results-directory ./test-results --verbosity normal --logger "trx;LogFileName=integration-test-results.trx" --settings ${{ env.RUN_SETTINGS_FILENAME }}
 
 

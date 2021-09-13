@@ -1,13 +1,40 @@
 ﻿using System;
 using Azure.Core;
 using Azure.Identity;
+using Microsoft.Extensions.Options;
 
 namespace SqlCollaborative.Azure.DataPipelineTools.Common
 {
-    public static class AzureIdentityHelper
+    public class AzureIdentityHelper
     {
-        public static string TenantId =>
-            Environment.GetEnvironmentVariable("TENANT_ID") ?? "00000000-0000-0000-0000-000000000000";
+        public AzureIdentityHelper(IOptions<AzureEnvironmentConfig> config)
+        {
+            Config = config.Value; 
+        }
+
+        private AzureEnvironmentConfig Config { get; set; }
+
+        private bool IsRunningLocally =>
+            string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WEBSITE_INSTANCE_ID"));
+
+        public string TenantId
+        {
+            get
+            {
+                var tenantId = Config?.TenantId ??
+                       Environment.GetEnvironmentVariable("TENANT_ID");
+
+                if (tenantId != null)
+                    return tenantId;
+
+                var environmentSpecificMessage =
+                    $"{(IsRunningLocally ? "Set the value 'TenantId' under the section 'AzureEnvironmentConfig' in the secret.settings.json file, or s" : "S")} et the environment variable 'TENANT_ID' for the Azure Functions app.";
+                throw new ApplicationException(
+                    $"The application setting TenantId is not configured. {environmentSpecificMessage}");
+
+            }
+        }
+
 
         public static TokenCredential GetDefaultAzureCredential()
         {

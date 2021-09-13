@@ -46,7 +46,8 @@ RESOURCE_NAME_SUFFIX="_${ACTOR_SHORT}_${RUNTIMESTAMP:8:12}_${GITHUB_SHA:0:7}"
 echo "Resource Name Suffix: $RESOURCE_NAME_SUFFIX"
 
 # We need the object id of the Enterprise Application created from the App Registration in order to set permissions in the ARM template. This is **not** the same as the app/client id
-echo "Retriving service principal id for the logged in user..."
+echo "Retriving service principal info for the logged in user..."
+TENANTID=$(az account show | jq --raw-output '.homeTenantId')
 SERVICEPRINCIPALAPPID=$(az account show | jq --raw-output '.user.name')
 #echo "Service Principal App/Client Id: $SERVICEPRINCIPALAPPID"
 SERVICEPRINCIPALID=$( az ad sp list --filter "appId eq '$SERVICEPRINCIPALAPPID' and servicePrincipalType eq 'Application'" --query [0].objectId --output tsv)
@@ -116,6 +117,7 @@ echo "==========================================================================
 # DEBUG: Use this to get the full deployment output JSON. If the ARM template outputs a full reference to a resource, we can find the bits we need easily.
 #echo "::set-output name=DEPLOYMENTOUTPUT::$DEPLOYMENTOUTPUT"
 
+echo "::set-output name=TENANTID::$TENANTID"
 echo "::set-output name=STORAGE_ACCOUNT_NAME::$(echo $DEPLOYMENTOUTPUT | jq --raw-output '.storageAccountName.value')"
 echo "::set-output name=STORAGE_CONTAINER_NAME::$(echo $DEPLOYMENTOUTPUT | jq --raw-output '.storageContainerName.value')"
 echo "::set-output name=FUNCTIONS_APP_NAME::$(echo $DEPLOYMENTOUTPUT | jq --raw-output '.functionsAppName.value')"
