@@ -24,6 +24,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
         public const string OrderByColumnParam = "orderBy";
         public const string OrderByDescendingParam = "orderByDesc";
         public const string LimitParam = "limit";
+        public const string FilterParam = "filter";
 
         private readonly ILogger _logger;
         public DataLakeConfigFactory(ILogger<DataLakeConfigFactory> logger)
@@ -224,9 +225,8 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
         private IEnumerable<Filter<DataLakeItem>> ParseFilters(HttpRequest req)
         {
             var filters = req.Query.Keys
-                            .Where(k => k.StartsWith("filter[") && k.EndsWith("]"))
+                            .Where(k => k.StartsWith($"{FilterParam}[") && k.EndsWith("]"))
                             // Clean up the column name by removing the filter[...] parts
-                            //.Select(f => f[7..^1])
                             .SelectMany(k => req.Query[k].Select(v => FilterFactory<DataLakeItem>.Create(k[7..^1], v, _logger)))
                             .Where(f => f != null);
 

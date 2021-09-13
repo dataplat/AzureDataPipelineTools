@@ -26,7 +26,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
 
         [FunctionName("DataLake-GetItems")]
         public async Task<IActionResult> DataLakeGetItems(
-            [HttpTrigger(AuthorizationLevel.Function, "get" /*, "post"*/, Route = "DataLake/GetItems")] HttpRequest req)
+            [HttpTrigger(AuthorizationLevel.Function, "get" /*, "post"*/, Route = "DataLake/GetItems")] HttpRequest req, ExecutionContext context)
         {
             req.GetQueryParameterDictionary();
 
@@ -40,7 +40,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
                 var client = _clientFactory.GetDataLakeClient(dataLakeConfig);
                 var controller = _serviceFactory.CreateDataLakeService(client);
                 
-                var responseJson = GetTemplateResponse(dataLakeConfig, getItemsConfig);
+                var responseJson = GetTemplateResponse(dataLakeConfig, getItemsConfig, context);
                 var items = await controller.GetItemsAsync(dataLakeConfig, getItemsConfig);
                 foreach (var item in items)
                     responseJson.Add(item.Key, item.Value);
@@ -50,13 +50,12 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             catch (ArgumentException ex)
             {
                 _logger.LogError(ex, ex.Message);
-                return new BadRequestObjectResult($"{{ \"error\": \"{ex.Message}\" }}");
+                return new BadRequestObjectResult($"{{\n  \"invocationId\":\"{context.InvocationId}\",\n  \"error\": \"{ex.Message}\"\n}}");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, ex.Message); // The simple message goes in the trace, but the full exception details are in the exception logging in Application Insights
-                
-                return new BadRequestObjectResult("{ \"error\": \"An error occurred, see the Azure Function logs for more details\" }");
+                return new BadRequestObjectResult($"{{\n  \"invocationId\":\"{context.InvocationId}\",\n  \"error\": \"An error occurred, see the Azure Function logs for more details\"\n}}");
             }
         }
 
@@ -64,7 +63,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
 
         [FunctionName("DataLake-CheckPathCase")]
         public async Task<IActionResult> DataLakeCheckPathCase(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "DataLake/CheckPathCase")] HttpRequest req)
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "DataLake/CheckPathCase")] HttpRequest req, ExecutionContext context)
         {
             var userAgentKey = req.Headers.Keys.FirstOrDefault(k => k.ToLower() == "user-agent" || k.ToLower() == "useragent");
             _logger.LogInformation($"C# HTTP trigger function processed a request [User Agent: { (userAgentKey == null ? "Unknown" : req.Headers[userAgentKey].ToString()) }].");
@@ -89,7 +88,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
                 // If the path could not be found as a directory, try for a file...
                 validatedPath ??= await dataLakeService.CheckPathAsync(getItemsConfig.Path, false);
 
-                var responseJson = GetTemplateResponse(dataLakeConfig, getItemsConfig);
+                var responseJson = GetTemplateResponse(dataLakeConfig, getItemsConfig, context);
                 responseJson.Add("validatedPath", validatedPath);
 
                 return validatedPath != null ?
@@ -99,12 +98,12 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             catch (ArgumentException ex)
             {
                 _logger.LogError(ex.Message);
-                return new BadRequestObjectResult($"{{ \"error\": \"{ex.Message}\" }}");
+                return new BadRequestObjectResult($"{{\n  \"invocationId\":\"{context.InvocationId}\",\n  \"error\": \"{ex.Message}\"\n}}");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, ex.Message); // The simple message goes in the trace, but the full exception details are in the exception logging in Application Insights
-                return new BadRequestObjectResult("{ \"error\": \"An error occurred, see the Azure Function logs for more details\" }");
+                return new BadRequestObjectResult($"{{\n  \"invocationId\":\"{context.InvocationId}\",\n  \"error\": \"An error occurred, see the Azure Function logs for more details\"\n}}");
             }
         }
         

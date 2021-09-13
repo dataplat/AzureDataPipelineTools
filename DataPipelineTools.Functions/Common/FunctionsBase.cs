@@ -14,11 +14,14 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.Common
             _logger = logger;
         }
 
-        protected JObject GetTemplateResponse(IDataLakeConnectionConfig dataLakeConnectionConfig, object parameters)
+        protected JObject GetTemplateResponse(IDataLakeConnectionConfig dataLakeConnectionConfig, object parameters, Microsoft.Azure.WebJobs.ExecutionContext context)
         {
             var assemblyInfo = AssemblyHelpers.GetAssemblyVersionInfoJson();
 
             var responseJson = new JObject();
+
+            responseJson.Add("invocationId", context.InvocationId);
+
             if (assemblyInfo.HasValues)
                 responseJson.Add("debugInfo", assemblyInfo);
 

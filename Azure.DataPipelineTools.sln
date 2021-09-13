@@ -9,6 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataPipelineTools", "DataPi
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{2B3AB844-E7ED-4808-A57F-3315C4EE8E26}"
 	ProjectSection(SolutionItems) = preProject
+		example.runsettings = example.runsettings
 		LICENSE = LICENSE
 	EndProjectSection
 EndProject
@@ -16,7 +17,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataPipelineTools.Tests", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataPipelineTools.Functions.Tests", "DataPipelineTools.Functions.Tests\DataPipelineTools.Functions.Tests.csproj", "{C2448E27-7F4C-4E1E-BAF7-D5344F330073}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataPipelineTools.Tests.Common", "DataPipelineTools.Tests.Common\DataPipelineTools.Tests.Common.csproj", "{6C304777-0D1A-45A6-A5E0-5849022F319A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataPipelineTools.Tests.Common", "DataPipelineTools.Tests.Common\DataPipelineTools.Tests.Common.csproj", "{6C304777-0D1A-45A6-A5E0-5849022F319A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
