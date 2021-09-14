@@ -71,8 +71,8 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
 
         internal struct ErrorMessage
         {
-            private const string OneMandatoryParamMissing = "Mandatory parameter '{0}' was not provided.";
-            private const string ParamMustHaveValue = "The parameter '{0}' must have a value if it is provided.";
+            internal const string OneMandatoryParamMissing = "Mandatory parameter '{0}' was not provided.";
+            internal const string ParamMustHaveValue = "The parameter '{0}' must have a value if it is provided.";
 
             internal static string AccountParamIsMandatory = string.Format(OneMandatoryParamMissing, AccountParam);
             internal static string ContainerParamIsMandatory = string.Format(OneMandatoryParamMissing, ContainerParam);
@@ -116,7 +116,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
 
 
             // If secrets are specified without a ref to a Key Vault, log a warning
-            if (secrets.Count(x => x.Exists) != 1 && !parameters[KeyVaultParam].Exists)
+            if (secrets.Count(x => x.Exists) != 0 && !parameters[KeyVaultParam].Exists)
                 _logger.LogWarning($"The authentication parameters are supplied, but a Azure Key Vault name is not. It is best practice to use Key Vault for storing secret values.");
         }
 

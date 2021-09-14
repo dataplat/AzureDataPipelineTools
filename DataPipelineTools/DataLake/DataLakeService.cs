@@ -32,6 +32,9 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
             if (string.IsNullOrWhiteSpace(path) || path.Trim() == "/")
                 return string.Empty;
 
+            // Trim any leading or trailing directory separators
+            path = path.Trim('/');
+
             // Check if the path exists with the casing as is...
             var pathExists = isDirectory ?
                                 _client.GetDirectoryClient(path).Exists() :
@@ -54,7 +57,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
                 if (validPaths.Count == 0)
                     return null;
                 if (validPaths.Count > 1 && isDirectory)
-                    throw new Exception("Multiple directories matched with case insensitive compare.");
+                    throw new MultipleMatchesException(ErrorMessage.MultipleDirectoryMatchesWithCaseInsensitiveCompare);
 
                 validDirectory = validPaths[0];
                 validDirectories = validPaths;
@@ -68,7 +71,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
             var files = validDirectories.SelectMany(x => MatchPaths(x, false, filename)).ToList();
 
             if (files.Count > 1)
-                throw new Exception("Multiple files matched with case insensitive compare.");
+                throw new MultipleMatchesException(ErrorMessage.MultipleFileMatchesWithCaseInsensitiveCompare);
             return files.FirstOrDefault();
         }
 
@@ -110,8 +113,8 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
                                 getItemsConfig.Path;
 
             // Only check the path if it is not the root. Checking is the root exists throws, and if the container is valid the root will always be valid
-            if (directory != "/" && !await _client.GetDirectoryClient(directory).ExistsAsync() )
-                throw new DirectoryNotFoundException($"Path '{directory} could not be found'");
+            if (directory != "/" && !await _client.GetDirectoryClient(directory).ExistsAsync())
+                throw new DirectoryNotFoundException(string.Format(ErrorMessage.PathNotFound, directory));
 
             var paths = _client
                 .GetPaths(path: directory ?? string.Empty, recursive: getItemsConfig.Recursive)
@@ -163,6 +166,14 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake
             var resultJson = $"{{ {(getItemsConfig.IgnoreDirectoryCase && directory != getItemsConfig.Path ? $"\"correctedFilePath\": \"{directory}\"," : string.Empty)} {filesListJson} }}";
 
             return JObject.Parse(resultJson);
+        }
+
+        internal struct ErrorMessage
+        {
+            internal const string MultipleFileMatchesWithCaseInsensitiveCompare = "Multiple files matched with case insensitive compare.";
+            internal const string MultipleDirectoryMatchesWithCaseInsensitiveCompare = "Multiple directories matched with case insensitive compare.";
+            internal const string PathNotFound = "Path '{0}' could not be found";
+
         }
     }
 }

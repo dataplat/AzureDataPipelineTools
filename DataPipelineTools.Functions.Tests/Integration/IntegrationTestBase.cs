@@ -74,7 +74,8 @@ namespace DataPipelineTools.Functions.Tests.Integration
         protected string ServicePrincipalName => TestContext.Parameters["ServicePrincipalName"];
         protected string ApplicationInsightsName => TestContext.Parameters["ApplicationInsightsName"];
 
-        protected abstract string FunctionUri { get; }
+        protected string FunctionUri => $"{FunctionsAppUrl}/api/{FunctionRelativeUri}";
+        protected abstract string FunctionRelativeUri { get; }
 
 
         // The properties that we get from Azure Key Vault are cached for reuse
@@ -162,7 +163,7 @@ namespace DataPipelineTools.Functions.Tests.Integration
 
 
         [Test]
-        public void Test_RunSettingsLoadedOk()
+        public void Given_RunSettingsFile_Should_LoadSettingsSuccessfully()
         {
             Assert.IsNotNull(UseFunctionsEmulator);
             Assert.IsNotNull(FunctionsAppName);
@@ -200,9 +201,23 @@ namespace DataPipelineTools.Functions.Tests.Integration
             }
         }
 
-
-
+        /// <summary>
+        /// Run a query against the URL specified by the property FunctionUri, using the <paramref name="parameters"/> list.
+        /// You should use this overload when using a dictionary does not make sense, such as when a function can take multiple parameters with the same key.
+        /// </summary>
+        /// <param name="parameters">A dictionary of parameters to use when calling the function</param>
+        /// <returns></returns>
         protected async Task<HttpResponseMessage> RunQueryFromParameters(Dictionary<string, string> parameters)
+        {
+            return await RunQueryFromParameters(parameters.ToList());
+        }
+
+        /// <summary>
+        /// Run a query against the URL specified by the property FunctionUri, using the <paramref name="parameters"/> dictionary.
+        /// </summary>
+        /// <param name="parameters">A dictionary of parameters to use when calling the function</param>
+        /// <returns></returns>
+        protected async Task<HttpResponseMessage> RunQueryFromParameters(List<KeyValuePair<string, string>> parameters)
         {
             using var client = new HttpClient();
             var queryParams = HttpUtility.ParseQueryString(string.Empty);

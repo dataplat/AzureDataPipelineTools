@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -16,6 +17,9 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
         private readonly DataLakeConfigFactory _configFactory;
         private readonly IDataLakeClientFactory _clientFactory;
         private readonly DataLakeServiceFactory _serviceFactory;
+
+        public static readonly string PathNotFoundErrorMessage =
+            "Path could not be found, or the authentication method used does not have access to the path.";
         public DataLakeFunctions(ILogger<DataLakeFunctions> logger, DataLakeConfigFactory configFactory, IDataLakeClientFactory clientFactory, DataLakeServiceFactory serviceFactory):
             base(logger)
         {
@@ -47,7 +51,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
 
                 return (IActionResult)new OkObjectResult(responseJson);
             }
-            catch (ArgumentException ex)
+            catch (Exception ex) when (ExceptionTypeReturnsDetailedError(ex))
             {
                 _logger.LogError(ex, ex.Message);
                 return new BadRequestObjectResult($"{{\n  \"invocationId\":\"{context.InvocationId}\",\n  \"error\": \"{ex.Message}\"\n}}");
@@ -89,13 +93,18 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
                 validatedPath ??= await dataLakeService.CheckPathAsync(getItemsConfig.Path, false);
 
                 var responseJson = GetTemplateResponse(dataLakeConfig, getItemsConfig, context);
-                responseJson.Add("validatedPath", validatedPath);
 
-                return validatedPath != null ?
-                    (IActionResult)new OkObjectResult(responseJson):
-                    (IActionResult)new NotFoundObjectResult(responseJson);
+
+                if (validatedPath != null)
+                {
+                    responseJson.Add("validatedPath", validatedPath);
+                    return (IActionResult) new OkObjectResult(responseJson);
+                }
+
+                responseJson.Add("error", PathNotFoundErrorMessage);
+                return (IActionResult)new BadRequestObjectResult(responseJson);
             }
-            catch (ArgumentException ex)
+            catch (Exception ex) when (ExceptionTypeReturnsDetailedError(ex))
             {
                 _logger.LogError(ex.Message);
                 return new BadRequestObjectResult($"{{\n  \"invocationId\":\"{context.InvocationId}\",\n  \"error\": \"{ex.Message}\"\n}}");
@@ -106,6 +115,12 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
                 return new BadRequestObjectResult($"{{\n  \"invocationId\":\"{context.InvocationId}\",\n  \"error\": \"An error occurred, see the Azure Function logs for more details\"\n}}");
             }
         }
-        
+
+        private bool ExceptionTypeReturnsDetailedError(Exception ex)
+        {
+            return ex is ArgumentException ||
+                   ex is MultipleMatchesException  ||
+                   ex is DirectoryNotFoundException;
+        }
     }
 }

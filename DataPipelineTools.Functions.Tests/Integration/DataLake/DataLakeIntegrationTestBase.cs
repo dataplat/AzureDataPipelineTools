@@ -29,7 +29,7 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
 
 
         [Test]
-        public async Task Test_FunctionReturnsError_With_MissingAccountParam()
+        public async Task Given_AccountParamIsMissing_Should_ReturnError()
         {
             var parameters = new Dictionary<string, string>
             {
@@ -43,11 +43,11 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
             // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
             dynamic results = GetResultsObject(response);
             Assert.IsNotNull(results.error);
-            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.AccountParamIsMandatory,results.error.ToString());
+            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.AccountParamIsMandatory,results.error?.ToString());
         }
 
         [Test]
-        public async Task Test_FunctionReturnsError_With_MissingContainerParam()
+        public async Task Given_ContainerParamIsMissing_Should_ReturnError()
         {
             var parameters = new Dictionary<string, string>
             {
@@ -61,11 +61,11 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
             // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
             dynamic results = GetResultsObject(response);
             Assert.IsNotNull(results.error);
-            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.ContainerParamIsMandatory, results.error.ToString());
+            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.ContainerParamIsMandatory, results.error?.ToString());
         }
 
         [Test]
-        public async Task Test_FunctionIsRunnable_With_FunctionsServicePrincipalAuth()
+        public async Task Given_NoAuthParameters_Should_RunSuccessfully_WithFunctionsServicePrincipalAuth()
         {
             var parameters = new Dictionary<string, string>
             {
@@ -83,7 +83,7 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
         }
 
         [Test]
-        public async Task Test_FunctionIsRunnable_With_UserServicePrincipalAuthAndPlainTextKey()
+        public async Task Given_UserServicePrincipalClientIdAndSecret_Should_RunSuccessfully_WithUserServicePrincipalAuth()
         {
             var parameters = new Dictionary<string, string>
             {
@@ -103,7 +103,7 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
         }
 
         [Test]
-        public async Task Test_FunctionIsRunnable_With_UserServicePrincipalAuthAndKeyVaultKeyName()
+        public async Task Given_UserServicePrincipalClientIdAndKeyVaultSecretName_Should_RunSuccessfully_WithUserServicePrincipalAuth()
         {
             var parameters = new Dictionary<string, string>
             {
@@ -128,7 +128,7 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
         [TestCase(null)]
         [TestCase("")]
         [TestCase("  ")]
-        public async Task Test_FunctionReturnsError_With_UserServicePrincipalAuthAndEmptyClientId(string clientId)
+        public async Task Given_NullOrEmptyUserServicePrincipalClientId_Should_ReturnError(string clientId)
         {
             var parameters = new Dictionary<string, string>
             {
@@ -144,14 +144,14 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
             // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
             dynamic results = GetResultsObject(response);
             Assert.IsNotNull(results.error);
-            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.UserDefinedServicePrincipalParamsMissing, results.error.ToString());
+            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.UserDefinedServicePrincipalParamsMissing, results.error?.ToString());
         }
 
         [Test]
         [TestCase(null)]
         [TestCase("")]
         [TestCase("  ")]
-        public async Task Test_FunctionReturnsError_With_UserServicePrincipalAuthAndEmptyClientSecret(
+        public async Task Given_NullOrEmptyUserServicePrincipalSecret_Should_ReturnError(
             string clientSecret)
         {
             var parameters = new Dictionary<string, string>
@@ -168,12 +168,12 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
             // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
             dynamic results = GetResultsObject(response);
             Assert.IsNotNull(results.error);
-            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.UserDefinedServicePrincipalParamsMissing, results.error.ToString());
+            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.UserDefinedServicePrincipalParamsMissing, results.error?.ToString());
         }
 
 
         [Test]
-        public async Task Test_FunctionReturnsError_With_UserServicePrincipalAuthAndMissingClientId()
+        public async Task Given_UserServicePrincipalClientIdIsMissing_Should_ReturnError()
         {
             var parameters = new Dictionary<string, string>
             {
@@ -187,7 +187,7 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
         }
 
         [Test]
-        public async Task Test_FunctionReturnsError_With_UserServicePrincipalAuthAndMissingClientSecret()
+        public async Task Given_UserServicePrincipalSecretIsMissing_Should_ReturnError()
         {
             var parameters = new Dictionary<string, string>
             {
@@ -201,7 +201,7 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
         }
 
         [Test]
-        public async Task Test_FunctionReturnsError_With_InvalidUserServicePrincipalAuthAndMissingClientSecret()
+        public async Task Given_UserServicePrincipalClientIdDoesNotExist_Should_ReturnError()
         {
             var parameters = new Dictionary<string, string>
             {
@@ -225,7 +225,7 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
 
 
         [Test]
-        public async Task Test_FunctionIsRunnable_With_SasTokenAuthAndPlainTextKey()
+        public async Task Given_SasToken_Should_RunSuccessfully_WithSasTokenAuth()
         {
             var parameters = new Dictionary<string, string>
             {
@@ -244,7 +244,7 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
         }
 
         [Test]
-        public async Task Test_FunctionIsRunnable_With_SasTokenAuthAuthAndKeyVaultKeyName()
+        public async Task Given_SasTokenKeyVaultSecretName_Should_RunSuccessfully_WithSasTokenAuth()
         {
             var parameters = new Dictionary<string, string>
             {
@@ -267,7 +267,7 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
         [TestCase(null)]
         [TestCase("")]
         [TestCase("  ")]
-        public async Task Test_FunctionReturnsError_With_SasTokenAuthAndEmptySasToken(string sasToken)
+        public async Task Given_NullOrEmptySasToken_Should_ReturnError(string sasToken)
         {
             var parameters = new Dictionary<string, string>
             {
@@ -282,11 +282,11 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
             // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
             dynamic results = GetResultsObject(response);
             Assert.IsNotNull(results.error);
-            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.SasTokenParamMustHaveValue, results.error.ToString());
+            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.SasTokenParamMustHaveValue, results.error?.ToString());
         }
 
         [Test]
-        public async Task Test_FunctionReturnsError_With_SasTokenAuthAndInvalidSasToken()
+        public async Task Given_InvalidSasToken_Should_ReturnError()
         {
             var parameters = new Dictionary<string, string>
             {
@@ -308,7 +308,7 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
 
 
         [Test]
-        public async Task Test_FunctionIsRunnable_With_AccountKeyAuthAndPlainTextKey()
+        public async Task Given_AccountKey_Should_RunSuccessfully_WithAccountKeyAuth()
         {
             var parameters = new Dictionary<string, string>
             {
@@ -327,7 +327,7 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
         }
 
         [Test]
-        public async Task Test_FunctionIsRunnable_With_AccountKeyAuthAuthAndKeyVaultKeyName()
+        public async Task Given_AccountKeyKeyVaultSecretName_Should_RunSuccessfully_WithAccountKeyAuth()
         {
             var parameters = new Dictionary<string, string>
             {
@@ -350,7 +350,7 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
         [TestCase(null)]
         [TestCase("")]
         [TestCase("  ")]
-        public async Task Test_FunctionReturnsError_With_AccountKeyAuthAndEmptyAccountKeyAuth(string accountKey)
+        public async Task Given_NullOrEmptyAccountKey_Should_ReturnError(string accountKey)
         {
             var parameters = new Dictionary<string, string>
             {
@@ -365,12 +365,12 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
             // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
             dynamic results = GetResultsObject(response);
             Assert.IsNotNull(results.error);
-            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.AccountKeyParamMustHaveValue, results.error.ToString());
+            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.AccountKeyParamMustHaveValue, results.error?.ToString());
         }
 
 
         [Test]
-        public async Task Test_FunctionReturnsError_With_AccountKeyAuthAndInvalidAccountKeyAuth()
+        public async Task Given_InvalidAccountKey_Should_ReturnError()
         {
             var parameters = new Dictionary<string, string>
             {
@@ -400,15 +400,11 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
 
 
         [Test]
-        [TestCase(false, false, false, HttpStatusCode.OK)] // Functions Service Principal Auth
-        [TestCase(true, false, false, HttpStatusCode.OK)] // User Service Principal Auth
-        [TestCase(false, true, false, HttpStatusCode.OK)] // Sas Token Auth
-        [TestCase(false, false, true, HttpStatusCode.OK)] // Account Key Auth
         [TestCase(true, true, false, HttpStatusCode.BadRequest)]
         [TestCase(true, false, true, HttpStatusCode.BadRequest)]
         [TestCase(false, true, true, HttpStatusCode.BadRequest)]
         [TestCase(true, true, true, HttpStatusCode.BadRequest)]
-        public async Task Test_FunctionReturnsError_When_MultipleAuthTypesUsed(bool useUserServicePrincipal,
+        public async Task Given_ParametersForMultipleAuthType_Should_ReturnError(bool useUserServicePrincipal,
             bool useSasToken, bool useAccountKey, HttpStatusCode expectedResponse)
         {
             var parameters = new Dictionary<string, string>
@@ -433,26 +429,9 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
 
             // Check response details. Its important to cast the actual or we test against JToken from the dynamic results
             dynamic results = GetResultsObject(response);
-
-            // If the response was ok, check the correct auth type got used
-            if (response.StatusCode == HttpStatusCode.OK)
-            {
-                var expectedAuthType = AuthType.FunctionsServicePrincipal;
-                if (useUserServicePrincipal)
-                    expectedAuthType = AuthType.UserServicePrincipal;
-                else if (useSasToken)
-                    expectedAuthType = AuthType.SasToken;
-                else if (useAccountKey)
-                    expectedAuthType = AuthType.AccountKey;
-
-                
-                Assert.AreEqual(expectedAuthType, (AuthType) results.authType);
-            }
-            // If it was a bad request, check the error message is set correctly
-            else if (response.StatusCode == HttpStatusCode.BadRequest)
-            {
-                Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.MultipleAuthTypesUsed, results.error.ToString());
-            }
+            
+            // Check the error message is set correctly
+            Assert.AreEqual(DataLakeConfigFactory.ErrorMessage.MultipleAuthTypesUsed, results.error?.ToString());
         }
 
 
@@ -461,7 +440,7 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
         [TestCase(null)]
         [TestCase("")]
         [TestCase("  ")]
-        public async Task Test_FunctionReturnsError_With_EmptyAccountName(string accountName)
+        public async Task Given_NullOrEmptyAccountName_Should_ReturnError(string accountName)
         {
             var parameters = new Dictionary<string, string>
             {
@@ -478,7 +457,7 @@ namespace DataPipelineTools.Functions.Tests.Integration.DataLake
         [TestCase(null)]
         [TestCase("")]
         [TestCase("  ")]
-        public async Task Test_FunctionReturnsError_With_EmptyContainerName(string containerName)
+        public async Task Given_NullOrEmptyContainerName_Should_ReturnError(string containerName)
         {
             var parameters = new Dictionary<string, string>
             {

@@ -119,8 +119,17 @@ jobs:
 
         STORAGE_ACCOUNT_NAME="${{ steps.create-devtest-labs-environment.outputs.STORAGE_ACCOUNT_NAME }}"
         STORAGE_CONTAINER_NAME="${{ steps.create-devtest-labs-environment.outputs.STORAGE_CONTAINER_NAME }}"
-        # The exclude patter for the .keepDirectory files is not working, so workaround below if to find these files and remove them from ADLS
-        azcopy copy "./DataPipelineTools.Functions.Tests/TestData" "https://$STORAGE_ACCOUNT_NAME.dfs.core.windows.net/$STORAGE_CONTAINER_NAME" --recursive=true --exclude-pattern=".keepDirectory"
+        
+        # The exclude pattern for the .keepDirectory files is not working, so workaround below if to find these files and remove them from ADLS
+        echo "Copying TestData folder into root of ADLS container"
+        azcopy copy "./DataPipelineTools.Functions.Tests/TestData" "https://$STORAGE_ACCOUNT_NAME.dfs.core.windows.net/$STORAGE_CONTAINER_NAME" --recursive=true #--exclude-pattern=".keepFolder"
+
+        # Duplicate one file and one folder with a difference case, so that we can test the function CheckPathCase
+        echo "Copying TestData/TestFolderCaseDupes/TestDoc3.txt file into ADLS container with different casing on folder structure"
+        azcopy copy "./DataPipelineTools.Functions.Tests/TestData/TestFolderCaseDupes/TestDoc3.txt" "https://$STORAGE_ACCOUNT_NAME.dfs.core.windows.net/$STORAGE_CONTAINER_NAME/TESTDATA/TestFolderCaseDupes/TestDoc3.txt"
+        
+        echo "Copying TestData/TestFolderCaseDupes/TestDoc4.txt file into ADLS container with different casing on name"
+        azcopy copy "./DataPipelineTools.Functions.Tests/TestData/TestFolderCaseDupes/TestDoc4.txt" "https://$STORAGE_ACCOUNT_NAME.dfs.core.windows.net/$STORAGE_CONTAINER_NAME/TestData/TestFolderCaseDupes/TESTDOC4.txt"
 
         # Remove the .keepDirectory files, these are just used to allow us to add empty folders into the sample data in Git
         # See here for more info: https://github.com/Azure/azure-storage-azcopy/issues/796

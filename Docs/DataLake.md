@@ -41,7 +41,7 @@ Successful calls will return 200 (OK), failed calls will return 400 (Bad Request
 ---
 
 ## CheckPathCase
-`https://<YourAzureFunctionsApp>.azurewebsites.net/api/DataLake/CheckPathCase`
+`https://<YourAzureFunctionsAppUrl>/api/DataLake/CheckPathCase`
 
 When dealing with metadata driven processing, it is easy for a mistake in the path case in metadata to cause errors when accessing the lake, because Azure Data Lake paths are case sensitive. This function can be used to validate a path. If the path does not exist, the function checks for all paths that could match but with different casing. If one is found, that is returned, or if none/multiple matches are found an error is returned.
 
@@ -56,7 +56,7 @@ Returned values JSON objects. Below is an example of a successful call:
     "debugInfo": {
         "informationalVersion": "1.0.0"
     },
-    "storageContainerUrl": "https://<YourAzureFunctionsApp>.dfs.core.windows.net/myContainer",
+    "storageContainerUrl": "https://<YourAzureFunctionsAppUrl>/myContainer",
     "authType": "FunctionsServicePrincipal",
     "parameters": {
         "Path": "TESTDATA"
@@ -73,7 +73,7 @@ An example of a call with a mandatory parameter missing:
 }
 ```
 
-An example of a call with a mandatory parameter missing:
+An example of a call where an internal error has occurred:
 ```
 {
   "invocationId":"e28970da-13f2-46be-848e-c25de54539a1",
@@ -83,7 +83,7 @@ An example of a call with a mandatory parameter missing:
 ---
 
 ## GetItems
-`https://<YourAzureFunctionsApp>.azurewebsites.net/api/DataLake/GetItems`
+`https://<YourAzureFunctionsAppUrl>/api/DataLake/GetItems`
 
 This function is intended as an improved version of the ADF *Get Metadata* activity. It can be called from ADF using the *Execute Function* activity, using the following parameters.
 
@@ -94,21 +94,37 @@ The [generic](#generic-parameters) and [authentication](#authentication-paramete
 | ----------- | ----------- | ----------- |
 | ignoreDirectoryCase | Bool | This will call checkPathCase on the path parameter before getting the items. This means that if the path is incorrectly cased, but there is only one path that matches when looking case-insensitively, the function will return results. |
 | limit | String | The number of results to return. |
-| filter[PropertyName] | String | This allows filtering the results using the properties of items in the result set. Format is `operator:value` allowing flexibility building filters. Valid `PropertyName` options are any of the returned properties of a file or folder. The `like` operator matching supports full .Net style regular expressions. |
+| filter[PropertyName] | String | This allows filtering the results using the properties of items in the result set. Format is `operator:value` allowing flexibility building filters. The `like` operator matching supports full .Net style regular expressions. See below for more info on valid property names. |
 | orderBy | String | The property to order the result set by. Valid properties are those of the returned json for each object, eg `LastModified`. |
 | orderByDesc | Bool | Sorts the results descending if true. Default when not specified is false. Used with ordering on `LastModified` and a limit of 1 will find the most recent file matching a filter. |
 | recursive | Bool | Look through folders recursively. |
 
 ### Filter Types
 When providing a filter parameter, there are a number of operators that can be used. The format is `filter[PropertyName]=operator:value`.
+
 | Operator | Description |
-| eq | Check if the property named `PropertyName' is equal to the value provided |
-| ne | Check if the property named `PropertyName' is not equal to the value provided |
-| lt | Check if the property named `PropertyName' is less than the value provided |
-| gt | Check if the property named `PropertyName' is greater than to the value provided |
-| le | Check if the property named `PropertyName' is less than or equal to the value provided |
-| ge | Check if the property named `PropertyName' is greater than or equal to the value provided |
-| like | Check if the property named `PropertyName' matches the pattern provided. You can use `*` for wildcards, but .Net sytle regular expressions are also supported. |
+| ----------- | ----------- |
+| eq | Property value is equal to the value provided |
+| ne | Property value is not equal to the value provided |
+| lt | Property value is less than the value provided |
+| gt | Property value is greater than to the value provided |
+| le | Property value is less than or equal to the value provided |
+| ge | Property value is greater than or equal to the value provided |
+| like | Property value matches the pattern provided. You can use `*` for wildcards, but .Net sytle regular expressions are also supported. |
+
+### Filter `PropertyName`
+Valid `PropertyName` options are any of the returned properties of a file or folder. These are:
+
+| Property | Type | Example | Description |
+| ----------- | ----------- | ----------- | ----------- |
+| Name | String | TestDoc1.txt | The name of the file or folder. |
+| Directory | String | TestData/TestFolder1 | The parent directory of the file or folder. |
+| FullPath | String | TestData/TestFolder1/TestDoc1.txt | The full path of the file or folder. |
+| Url | String | https://\<YourAzureFunctionsAppUrl><br/>/test/TestData/TestFolder1/TestDoc1.txt | The full Url for the file and folder, excluding and auth tokens that might be required for access. |
+| IsDirectory | Boolean | true | Flag to indicate if teh items is a file or folder. |
+| ContentLength | BigInt | 278432943 | Size of the file in bytes |
+| LastModified | Date | 2021-09-15T09:04:58Z | ISO Format date/time string  |
+
 
 #### Examples:
 Filter the results to return only files:
@@ -136,13 +152,14 @@ Filter the results to return only files or folders starting with *'abc'* or *'xz
 filter[Name]=like:(abc|xyz)*
 ```
 
-We can also combine multiple filter using `&`. for example to find files modified in september 2021. We could add a orderBy to this too to allow processing files in a date range in order...
-```
-filter[IsDirectory]=eq:false&filter[LastModified]=ge:2021-09-01 00:00:00&filter[LastModified]=lt:2021-10-01 00:00:00
-```
-
-
 > Note: When using filters, you must URL encode any special characters when sending the request. This is especially important for regular expression filters.
+
+We can also combine multiple filter using `&`. for example to find files modified since september 2021. We could add a orderBy to this too to allow processing files in a date range in order...
+```
+filter[IsDirectory]=eq:false&filter[LastModified]=ge:2021-09-01 00:00:00
+```
+> Note: Currently only one filter per property is supported. This mens it is not possible to look for files between dates by specifying two filters on date, on with greater than and the other with smaller than. Between filters will be added in a future release.
+
 
 ### Return Values
 If parameters are used incorrectly, the returned JSON will have the error details. All other errors return a simple, generic error message, but the Azure Functions app will have detailed logging available for the execution.
@@ -155,7 +172,7 @@ Returned values JSON objects. Below is an example of a successful call:
     "debugInfo": {
         "informationalVersion": "1.0.0"
     },
-    "storageContainerUrl": "https://<YourAzureFunctionsApp>.dfs.core.windows.net/myContainer",
+    "storageContainerUrl": "https://<YourAzureFunctionsAppUrl>/myContainer",
     "clientId": "f4b9d6e7-2753-44c6-a579-0bd77caa287d",
     "authType": "UserServicePrincipal",
     "parameters": {
@@ -206,7 +223,7 @@ Returned values JSON objects. Below is an example of a successful call:
     ]
 }
 ```
-> Note: If not files are returned, then the `fileCount` will be 0, and the `files` property will be an empty array.
+> Note: If no files are found in the specified path with the specified parameters, then the `fileCount` will be 0, and the `files` property will be an empty array.
 
 An example of a call with a mandatory parameter missing:
 ```
@@ -216,12 +233,11 @@ An example of a call with a mandatory parameter missing:
 }
 ```
 
-An example of a call with a mandatory parameter missing:
+An example of a call where an internal error has occurred:
 ```
 {
   "invocationId":"e28970da-13f2-46be-848e-c25de54539a1",
   "error": "An error occurred, see the Azure Function logs for more details"
 }
 ```
-
 
