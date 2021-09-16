@@ -1,0 +1,6 @@
+{
+    "itemDisplayName": "CI Test Environment for sqlcollaborative/AzureDataPipelineTools",
+    "githubUsername": "niall.langley@gmail.com",
+    "description": "An ADLSv2 storage account.",
+    "summary": "This template allows you to deploy an ADLSv2 storage account for the sqlcollaborative/AzureDataPipelineTools github projects to use for integration testing as part of it's CI build process."
+  }

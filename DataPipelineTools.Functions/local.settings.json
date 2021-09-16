@@ -1,0 +1,10 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet"
+  },
+  "AzureEnvironmentConfig": {
+    // TenantId is specified in the secrets.settings.json file so that it's not in source control
+    //"TenantId": "12345678-1234-5678-1234-567812345678"
+  }
+}

@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DataPipelineTools.Tests.Common\DataPipelineTools.Tests.Common.csproj" />
     <ProjectReference Include="..\DataPipelineTools\DataPipelineTools.csproj" />
   </ItemGroup>
 

@@ -1,0 +1,693 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "environment": {
+            "type": "string",
+            "defaultValue": "AzureDataPipelineTools"
+        },
+        "environmentUser": {
+            "type": "string",
+            "defaultValue": "AzureDataPipelineTools"
+        },
+        "gitProject": {
+            "type": "string",
+            "defaultValue": "AzureDataPipelineTools"
+        },
+        "branch": {
+            "type": "string"
+        },
+        "gitShaShort": {
+            "type": "string"
+        },
+        "gitSha": {
+            "type": "string"
+        },
+        "githubPullRequest": {
+            "type": "string",
+            "defaultValue": "N/A"
+        },
+        "location": {
+            "type": "string"
+        },
+        "resourceNameSuffix": {
+            "type": "string"
+        },
+        "deploymentTimestamp": {
+            "type": "string",
+            "defaultValue": "[utcNow('O')]"
+        },
+        "devopsServicePrincipalCredentials": {
+            "type": "object"
+        },
+        "additionalPrincipals": {
+            "type": "array"
+        },
+        "adlsStorageAccountContainerName": {
+            "type": "string",
+            "defaultValue": "test"
+        },
+        "adlsStorageAccountSasProperties": {
+            "type": "object",
+            "defaultValue": {
+                "signedServices": "b",
+                "signedPermission": "rl",
+                "signedExpiry": "[dateTimeAdd(parameters('deploymentTimestamp'), 'P7D')]",
+                "signedResourceTypes": "c"
+            }
+        }
+    },
+    "variables": {
+        "storageAccountApiVersion": "2021-04-01",
+        "adlsStorageAccountName": "[concat('adls', replace(toLower(parameters('resourceNameSuffix')), '_', ''))]",
+        "adlsStorageAccountResourceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('adlsStorageAccountName'))]",
+
+        "keyVaultApiVersion": "2021-04-01-preview",
+        "keyVaultName": "[concat('kv', replace(parameters('resourceNameSuffix'), '_', ''))]",
+        "keyVaultSecret_ServicePrincipalClientSecret": "DevopsServicePrincipalClientSecret",
+        "keyVaultSecret_StorageSaSToken": "StorageSaSToken",
+        "keyVaultSecret_StorageKey": "StorageKey",
+        "keyVaultSecret_functionsKey": "FunctionsKey",
+        "keyVaultSecret_applicationsInsightsKey": "ApplicationsInsightsKey",
+
+        "applicationInsightsApiVersion": "2020-02-02-preview",
+        "applicationInsightsName": "[concat('appinsights', parameters('resourceNameSuffix'))]",
+
+        "functionsAppApiVersion": "2019-08-01",
+        "functionsAppBlobStorageAccountName": "[concat('blob', replace(toLower(parameters('resourceNameSuffix')), '_', ''))]",
+        "functionsAppName": "[concat('func', replace(parameters('resourceNameSuffix'), '_', '-'))]",
+
+        "authorizationApiVersion": "2018-09-01-preview",
+
+        // "deploymentScriptsVersion": "2020-10-01",
+        // "deploymentScriptPermissionsName": "removeDeploymentServicePrincipalContributorPermissionFromResourceGroup",
+
+
+        
+        // "owner": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '8e3af657-a8ff-443c-a75c-2fe8c4bcb635')]",
+        "contributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'b24988ac-6180-42a0-ab88-20f7382dd24c')]",
+        "reader": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')]",
+        // "userAccessAdministrator": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '18d7d88d-d35e-4fb5-a5c3-7773c20a72d9')]",
+        "websiteContributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'de139f84-1756-47ae-9be6-808fbbe84772')]",
+    
+
+        "storageBlobDataContributor": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')]",
+        "storageBlobDatareader": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')]",
+
+
+        "defaultTags": {
+                "Environment": "[parameters('environment')]",
+                "Environment User": "[parameters('environmentUser')]",
+                "Project": "[parameters('gitProject')]",
+                "Commit": "[parameters('gitShaShort')]",
+                "Commit Full": "[parameters('gitSha')]",
+                "Branch": "[parameters('branch')]",
+                "Pull Request": "[parameters('githubPullRequest')]",
+                "Create Date Time": "[parameters('deploymentTimestamp')]"
+            }
+    },
+    "resources": [
+
+        /********************************************************************************************************************************************
+        ****    Add tags to the resource group that is created for the lab
+        ********************************************************************************************************************************************/
+        {
+            "type": "Microsoft.Resources/tags",
+            "name": "default",
+            "apiVersion": "2021-04-01",
+            "properties": {
+                "tags": "[variables('defaultTags')]"
+            }
+        },
+        
+
+
+        /********************************************************************************************************************************************
+        ****    Dev-Ops Service Principal Permissions (Things not granted by owner/contributor at the RG level)
+        ********************************************************************************************************************************************/
+        
+        // 'Storage Blob Data Contributor' scoped to the storage account container
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers/providers/roleAssignments",
+            "name": "[concat(variables('adlsStorageAccountName'), '/default/', parameters('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('devopsServicePrincipalCredentials').client_object_id, variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDataContributor')))]",
+            "apiVersion": "[variables('authorizationApiVersion')]",
+            "properties": {
+                "roleDefinitionId": "[variables('storageBlobDataContributor')]",
+                "principalId": "[parameters('devopsServicePrincipalCredentials').client_object_id]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'), '/blobServices/default/containers/', parameters('adlsStorageAccountContainerName'))]"
+            ]
+        },
+
+        // 'Contributor' scoped to the functions app to allow code deployments
+        {
+            "type": "Microsoft.Web/sites/providers/roleAssignments",
+            "name": "[concat(variables('functionsAppName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('devopsServicePrincipalCredentials').client_object_id, variables('contributor')))]",
+            ///subscriptions/ee0bd726-cc84-43ef-b846-ed00844a9dec/resourceGroups/AzureDataPipelineTools-CI_Build___feature__azure-devtest-labs-arm-CICD___-559267/providers/Microsoft.Web/sites/func4btzxxxxecb9ee6
+            "apiVersion": "[variables('authorizationApiVersion')]",
+            "properties": {
+                "roleDefinitionId": "[variables('contributor')]", 
+                "principalId": "[parameters('devopsServicePrincipalCredentials').client_object_id]"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]"
+            ]
+        },
+
+        // 'Website Contributor' scoped to the application insights to allow code deployments
+        {
+            "type": "microsoft.insights/components/providers/roleAssignments",
+            "name": "[concat(variables('applicationInsightsName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('devopsServicePrincipalCredentials').client_object_id, variables('websiteContributor')))]",
+            ///subscriptions/ee0bd726-cc84-43ef-b846-ed00844a9dec/resourceGroups/AzureDataPipelineTools-CI_Build___feature__azure-devtest-labs-arm-CICD___-559267/providers/Microsoft.Web/sites/func4btzxxxxecb9ee6
+            "apiVersion": "[variables('authorizationApiVersion')]",
+            "properties": {
+                "roleDefinitionId": "[variables('websiteContributor')]", 
+                "principalId": "[parameters('devopsServicePrincipalCredentials').client_object_id]"
+            },
+            "dependsOn": [
+                "[resourceId('microsoft.insights/components', variables('applicationInsightsName'))]"
+            ]
+        },
+
+
+
+        /********************************************************************************************************************************************
+        ****    Functions App Service Principal Permissions (Allow the functions app to access resources)
+        ****    
+        ****    Adds IAM access for functions app. See the following page for details of how to get the object id for the SPN
+        ****      https://www.codeisahighway.com/there-is-a-new-way-to-reference-managed-identity-in-arm-template/
+        ********************************************************************************************************************************************/
+        
+        // 'Reader' scoped to the storage account
+        {
+            "type": "Microsoft.Storage/storageAccounts/providers/roleAssignments",
+            "name": "[concat(variables('adlsStorageAccountName'),'/Microsoft.Authorization/',guid(resourceGroup().id, variables('functionsAppName'), variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('reader')))]",
+            "apiVersion": "[variables('authorizationApiVersion')]",
+            "properties": {
+                "roleDefinitionId": "[variables('reader')]",
+                "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('functionsAppName')), variables('functionsAppApiVersion'), 'full').identity.principalId]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'))]",
+                "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]",
+                "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+            ]
+        },
+
+        // 'Storage Blob Data Reader' scoped to the storage account
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers/providers/roleAssignments",
+            "name": "[concat(variables('adlsStorageAccountName'), '/default/', parameters('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, variables('functionsAppName'), variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDatareader')))]",
+            "apiVersion": "[variables('authorizationApiVersion')]",
+            "properties": {
+                "roleDefinitionId": "[variables('storageBlobDatareader')]",
+                "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('functionsAppName')), variables('functionsAppApiVersion'), 'full').identity.principalId]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'))]",
+                "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]",
+                "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+            ]
+        },
+
+
+        /********************************************************************************************************************************************
+        ****    Additional principals arte added using the additional principals array parameter
+        ****    
+        ****    Use the copy() function to loop over the array and add permissions for those users / groups / service principals using their object
+        ****    id's.
+        ********************************************************************************************************************************************/
+        
+        // 'Reader' scoped to the resource group. This already exists, here as an example
+        {
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "[variables('authorizationApiVersion')]",
+            "name": "[guid(resourceGroup().id, parameters('additionalPrincipals')[copyIndex()])]",
+            "properties": {
+                "roleDefinitionId": "[variables('reader')]",
+                "principalId": "[parameters('additionalPrincipals')[copyIndex()]]"
+            },
+            "copy": {
+                "name": "principalCopy",
+                "count": "[length(parameters('additionalPrincipals'))]"
+            }
+        },
+
+        // 'Storage Blob Data Contributor' scoped to the storage account container
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers/providers/roleAssignments",
+            "name": "[concat(variables('adlsStorageAccountName'), '/default/', parameters('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('additionalPrincipals')[copyIndex()], variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDataContributor')))]",
+            "apiVersion": "[variables('authorizationApiVersion')]",
+            "properties": {
+                "roleDefinitionId": "[variables('storageBlobDataContributor')]",
+                "principalId": "[parameters('additionalPrincipals')[copyIndex()]]"
+            },
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'), '/blobServices/default/containers/', parameters('adlsStorageAccountContainerName'))]"
+            ],
+            "copy": {
+                "name": "principalCopy",
+                "count": "[length(parameters('additionalPrincipals'))]"
+            }
+        },
+
+        // Assign access policies to the key vault. Need to test adding this to the KV template...
+        {
+            "type": "Microsoft.KeyVault/vaults/accessPolicies",
+            "name": "[concat(variables('keyVaultName'), '/add')]",
+            "apiVersion": "[variables('keyVaultApiVersion')]",
+            "properties": {
+                "copy": [
+                    {
+                        "name": "accessPolicies",
+                        "count": "[length(parameters('additionalPrincipals'))]",
+                        "input": {
+                            "tenantId": "[subscription().tenantId]",
+                            "objectId": "[parameters('additionalPrincipals')[copyIndex('accessPolicies')]]",
+                            "permissions": {
+                                "secrets": [
+                                    "list",
+                                    "get"
+                                ]
+                            }
+                        }
+                    }
+                ]
+            },
+            "dependsOn": [
+                "[concat('Microsoft.KeyVault/vaults/', variables('keyVaultName'))]"
+            ]
+        },
+
+
+        /********************************************************************************************************************************************
+        ****    ADLS storage
+        ********************************************************************************************************************************************/
+        {
+            "name": "[variables('adlsStorageAccountName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "[variables('storageAccountApiVersion')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "accessTier": "Hot",
+                "minimumTlsVersion": "TLS1_2",
+                "supportsHttpsTrafficOnly": true,
+                "allowBlobPublicAccess": false,
+                "allowSharedKeyAccess": true,
+                "isHnsEnabled": true,
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "defaultAction": "Allow"
+                }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]"
+            ],
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "StorageV2",
+            "tags": "[union(variables('defaultTags'), 
+                            createObject('Resource Deccription', 'ADLS Integration Test Data Account')
+                           )]",
+            "resources": [
+                // Add a container to the storage account
+                {
+                    "name": "[concat('default/', parameters('adlsStorageAccountContainerName'))]",
+                    "type": "blobServices/containers",
+                    "apiVersion": "[variables('storageAccountApiVersion')]",
+                    "properties": {
+                        "publicAccess": "None"
+                    },
+                    "tags": "[union(variables('defaultTags'), 
+                                    createObject('Resource Deccription', 'ADLS Integration Test Data Container')
+                                   )]",
+                    "dependsOn": [
+                        "[variables('adlsStorageAccountName')]"
+                    ]
+                }
+            ]
+        },
+
+
+
+        /********************************************************************************************************************************************
+        ****    Key Vault
+        ********************************************************************************************************************************************/
+        {
+            "type": "Microsoft.KeyVault/vaults",
+            "apiVersion": "[variables('keyVaultApiVersion')]",
+            "name": "[variables('keyVaultName')]",
+            "location": "[resourceGroup().location]",
+            "tags": "[union(variables('defaultTags'), 
+                            createObject('Resource Deccription', 'Key Vault for Integration Testing')
+                           )]",
+            "dependsOn": [
+                "[variables('adlsStorageAccountName')]",
+                "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'))]",
+                "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]"
+            ],
+            "properties": {
+                "enabledForDeployment": true,
+                "enabledForTemplateDeployment": true,
+                "enabledForDiskEncryption": true,
+                "tenantId": "[subscription().tenantId]",
+                "accessPolicies": [ 
+                    {
+                        "tenantId": "[subscription().tenantId]",
+                        "objectId": "[parameters('devopsServicePrincipalCredentials').client_object_id]",
+                        "permissions": {
+                            "secrets": [
+                                "list",
+                                "get"
+                            ]
+                        }
+                    },
+                    {
+                        "tenantId": "[subscription().tenantId]",
+                        "objectId": "[reference(resourceId('Microsoft.Web/sites', variables('functionsAppName')), variables('functionsAppApiVersion'), 'full').identity.principalId]",
+                        "permissions": {
+                            "secrets": [
+                                "list",
+                                "get"
+                            ]
+                        }
+                    }
+                ],
+                "sku": {
+                    "name": "standard",
+                    "family": "A"
+                }
+            },
+            "resources": [
+                {
+                    "type": "secrets",
+                    "apiVersion": "[variables('keyVaultApiVersion')]",
+                    "name": "[variables('keyVaultSecret_StorageSaSToken')]",
+                    "dependsOn": [
+                        "[concat('Microsoft.KeyVault/vaults/', variables('keyVaultName'))]",
+                        "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'))]"
+                    ],
+                    "properties": {
+                        "value": "[listAccountSas(variables('adlsStorageAccountName'), variables('storageAccountApiVersion'), parameters('adlsStorageAccountSasProperties')).accountSasToken]"
+                    }
+                },
+                {
+                    "type": "secrets",
+                    "apiVersion": "[variables('keyVaultApiVersion')]",
+                    "name": "[variables('keyVaultSecret_ServicePrincipalClientSecret')]",
+                    "dependsOn": [
+                        "[concat('Microsoft.KeyVault/vaults/', variables('keyVaultName'))]"
+                    ],
+                    "properties": {
+                        "value": "[parameters('devopsServicePrincipalCredentials').client_secret]"
+                    }
+                },
+                {
+                    "type": "secrets",
+                    "apiVersion": "[variables('keyVaultApiVersion')]",
+                    "name": "[variables('keyVaultSecret_functionsKey')]",
+                    "dependsOn": [
+                        "[concat('Microsoft.KeyVault/vaults/', variables('keyVaultName'))]",
+                        "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]"
+                    ],
+                    "properties": {
+                        "value": "[listKeys(concat(resourceId('Microsoft.Web/sites', variables('functionsAppName')), '/host/default/'), variables('functionsAppApiVersion')).functionKeys.default]"
+                    }
+                },
+                {
+                    "type": "secrets",
+                    "apiVersion": "[variables('keyVaultApiVersion')]",
+                    "name": "[variables('keyVaultSecret_StorageKey')]",
+                    "dependsOn": [
+                        "[concat('Microsoft.KeyVault/vaults/', variables('keyVaultName'))]",
+                        "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]"
+                    ],
+                    "properties": {
+                        "value": "[listKeys(variables('adlsStorageAccountResourceId'), variables('storageAccountApiVersion')).keys[0].value]"
+                    }
+                },
+                {
+                    "type": "secrets",
+                    "apiVersion": "[variables('keyVaultApiVersion')]",
+                    "name": "[variables('keyVaultSecret_applicationsInsightsKey')]",
+                    "dependsOn": [
+                        "[concat('Microsoft.KeyVault/vaults/', variables('keyVaultName'))]",
+                        "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]"
+                    ],
+                    "properties": {
+                        "value": "[reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), variables('applicationInsightsApiVersion'), 'full').properties.InstrumentationKey]"
+                    }
+                }
+            ]
+        },
+
+        /********************************************************************************************************************************************
+        ****    Application Insights (for functions app logging)
+        ********************************************************************************************************************************************/
+        {
+            "name": "[variables('applicationInsightsName')]",
+            "type": "microsoft.insights/components",
+            "apiVersion": "[variables('applicationInsightsApiVersion')]",
+            "location": "[parameters('location')]",
+            "tags": "[union(variables('defaultTags'), 
+                            createObject('Resource Deccription', 'Application Insights')
+                           )]",
+            "properties": {
+                "ApplicationId": "[variables('applicationInsightsName')]",
+                "Application_Type": "web",
+                "Flow_Type": "Redfield"
+            }
+        },
+
+        /********************************************************************************************************************************************
+        ****    Functions Apps
+        ********************************************************************************************************************************************/
+        
+        // Blob storage for the functions app
+        {
+            "apiVersion": "[variables('storageAccountApiVersion')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('functionsAppBlobStorageAccountName')]",
+            "location": "[parameters('location')]",
+            "tags": "[union(variables('defaultTags'), 
+                            createObject('Resource Deccription', 'BLOB Storage for Functions Apps')
+                           )]",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "properties": {
+                "supportsHttpsTrafficOnly": true,
+                "minimumTlsVersion": "TLS1_2"
+            }
+        },
+
+        // Functions app, cofigured to use .Net Core 3.X with the blob storage above
+        {
+            "apiVersion": "[variables('functionsAppApiVersion')]",
+            "type": "Microsoft.Web/sites",
+            "name": "[variables('functionsAppName')]",
+            "location": "[parameters('location')]",
+            "kind": "functionapp",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('functionsAppBlobStorageAccountName'))]",
+                "[resourceId('microsoft.insights/components', variables('applicationInsightsName'))]"
+            ],
+            
+            "tags": "[union(variables('defaultTags'), 
+                            createObject('Resource Deccription', 'Functions App hosting the Azure Data Pipeline Tools functions')
+                           )]",
+            "properties": {
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~3"
+                        },
+                        {
+                            "name": "FUNCTIONS_WORKER_RUNTIME",
+                            "value": "dotnet"
+                        },
+                        {
+                            "name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('functionsAppBlobStorageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('functionsAppBlobStorageAccountName')), variables('storageAccountApiVersion')).keys[0].value,';EndpointSuffix=','core.windows.net')]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('functionsAppBlobStorageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('functionsAppBlobStorageAccountName')), variables('storageAccountApiVersion')).keys[0].value,';EndpointSuffix=','core.windows.net')]"
+                        },
+                        // {
+                        //     "name": "WEBSITE_CONTENTSHARE",
+                        //     "value": "[concat('edi-', parameters('webApps')[copyIndex()].name, '-', parameters('env'), '-app')]"
+                        // },
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), variables('applicationInsightsApiVersion')).InstrumentationKey]"
+                        },
+                        {
+                            "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                            "value": "[reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), variables('applicationInsightsApiVersion')).ConnectionString]"
+                        },
+                        {
+                            "name": "TENANT_ID",
+                            "value": "[parameters('devopsServicePrincipalCredentials').tenant_id]"
+                        }
+                    ]
+                }
+            }
+        }
+
+        // /********************************************************************************************************************************************
+        // ****    Script deployment. 
+        // ****    
+        // ****    Depends on everyhitng so that it runs at the end. We use it to remove contributor access from the GitHub SPN to the created RG
+        // ****    to remove a security gap that allows the SPN to create resources
+        // ********************************************************************************************************************************************/
+        
+        // {
+        //     "type": "Microsoft.Resources/deploymentScripts",
+        //     "apiVersion": "[variables('deploymentScriptsVersion')]",
+        //     "name": "[variables('deploymentScriptPermissionsName')]",
+        //     "location": "[resourceGroup().location]",
+        //     "kind": "AzurePowerShell",
+        //     "properties": {
+        //         "azPowerShellVersion": "3.0",
+        //         "retentionInterval": "P1D",
+        //         "arguments": "[concat('-tenantId \\\"', parameters('devopsServicePrincipalCredentials').tenant_id, '\\\" -clientId \\\"', parameters('devopsServicePrincipalCredentials').client_id, '\\\" -clientSecret \\\"', parameters('devopsServicePrincipalCredentials').client_secret, '\\\" -scope \\\"', resourceGroup().id, '\\\"')]",
+        //         "scriptContent": "
+        //             param([string] $tenantId, [string] $clientId, [string] $clientSecret, [string] $scope)
+
+        //             $psCred = New-Object -TypeName System.Management.Automation.PSCredential($clientId, (ConvertTo-SecureString  $clientSecret  -AsPlainText -Force));
+        //             Connect-AzAccount -ServicePrincipal -Credential $psCred -Tenant $tenantId;
+
+        //             Get-AzContext;
+        //             $clientObjectId = Get-AzADServicePrincipal -ApplicationId ([guid]$clientId) | Select-Object -ExpandProperty Id;
+        //             Write-Output \"Client Object Id: $clientObjectId\";
+
+        //             $isAssignedContributor = Get-AzRoleAssignment -Scope $scope -RoleDefinitionName \"Contributor\" -ObjectId $clientObjectId;
+        //             $isAssignedUserAccessAdministrator = Get-AzRoleAssignment -Scope $scope -RoleDefinitionName \"User Access Administrator\" -ObjectId $clientObjectId;
+        //             if ($isAssignedContributor -and (-not $isAssignedUserAccessAdministrator)) { 
+        //                 \"Contributor is assigned to the GitHub SPN, but the SPN does not have enough permission to remove this from itself. The GitHub SPN need to be granted 'User Access Administrator' in the ARM template so that this script can remove both 'Contributor' and  'User Access Administrator' rolse from the GitHub SPN.\" 
+        //             }
+
+        //             if ($isAssignedContributor) {
+        //                 Write-Output \"Removing 'Contributor' role from SPN...\";
+        //                 Remove-AzRoleAssignment -Scope $scope -RoleDefinitionName \"Contributor\" -ObjectId $clientObjectId;
+        //             }
+
+        //             if ($isAssignedUserAccessAdministrator) {
+        //                 Write-Output \"Removing 'User Access Administrator role' from SPN...\";
+        //                 Remove-AzRoleAssignment -Scope $scope -RoleDefinitionName \"User Access Administrator\" -ObjectId $clientObjectId;
+        //             }
+        //         "
+        //     },
+        //     "dependsOn": [
+        //         "[resourceId('Microsoft.Storage/storageAccounts', variables('functionsAppBlobStorageAccountName'))]",
+        //         "[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'), '/blobServices/default/containers/', parameters('adlsStorageAccountContainerName'))]",
+        //         "[resourceId('Microsoft.Web/sites', variables('functionsAppName'))]",
+        //         "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]"
+        //         // Reference permissions
+        //         //,"[resourceId('Microsoft.Authorization/roleAssignments', guid(resourceGroup().id, 'devopsServicePrincipal_rg_reader'))]"
+        //         ,"[concat('Microsoft.Storage/storageAccounts/', variables('adlsStorageAccountName'), '/blobServices/default/containers/', parameters('adlsStorageAccountContainerName'), '/providers/Microsoft.Authorization/roleAssignments/', guid(resourceGroup().id, parameters('devopsServicePrincipalCredentials').client_object_id, variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDataContributor')))]"
+        //         // ,"[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers/providers/roleAssignments', concat(variables('adlsStorageAccountName'), '/default/', parameters('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, parameters('devopsServicePrincipalCredentials').client_object_id, variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDataContributor'))))]"
+        //         // ,"[resourceId('Microsoft.Storage/storageAccounts/providers/roleAssignments', concat(variables('adlsStorageAccountName'),'/Microsoft.Authorization/',guid(resourceGroup().id, variables('functionsAppName'), variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('reader'))))]"
+        //         // ,"[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers/providers/roleAssignments', concat(variables('adlsStorageAccountName'), '/default/', parameters('adlsStorageAccountContainerName'), '/Microsoft.Authorization/', guid(resourceGroup().id, variables('functionsAppName'), variables('adlsStorageAccountName'), parameters('adlsStorageAccountContainerName'), variables('storageBlobDatareader'))))]"
+        //     ]
+        // }
+    ],
+
+    /********************************************************************************************************************************************
+    ****    Outputs, does not seem to help when deploying uzing the Azure CLI 'az lab environment create' command
+    ********************************************************************************************************************************************/
+        
+    "outputs": {
+        "storageAccountName": {
+            "type": "string",
+            "value": "[variables('adlsStorageAccountName')]"
+        },
+        "storageContainerName": {
+            "type": "string",
+            "value": "[parameters('adlsStorageAccountContainerName')]"
+        },
+
+        "keyVaultName": {
+            "type": "string",
+            "value": "[variables('keyVaultName')]"
+        },
+        // "storageAccountConnectionString": {
+        //     "type": "string",
+        //     "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('adlsStorageAccountName'), ';AccountKey=', listKeys(variables('adlsStorageAccountResourceId'), variables('storageAccountApiVersion')).keys[0].value)]"
+        // },
+        "functionsAppName": {
+            "type": "string",
+            "value": "[variables('functionsAppName')]"
+        },
+        // Sometimes these seem to fail, as the functions app reboots and the resource is not available to reference.
+        // To see all the info we can get for a resource, use the reference function and pass the final param as 'full'
+        "functionsAppUri": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Web/sites', variables('functionsAppName')), variables('functionsAppApiVersion'), 'full').properties.hostNames[0]]"
+        },
+        "functionsAppKey": {
+            "type": "string",
+            "value": "[listKeys(concat(resourceId('Microsoft.Web/sites', variables('functionsAppName')), '/host/default/'), variables('functionsAppApiVersion')).functionKeys.default]"
+        },
+        "applicationInsightsInfo": {
+            "type": "object",
+            "value": "[reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), variables('applicationInsightsApiVersion'), 'full')]"
+        },
+        // "functionAppInfo": {
+        //     "type": "object",
+        //     "value": "[reference(resourceId('Microsoft.Web/sites', variables('functionsAppName')), variables('functionsAppApiVersion'), 'full')]"
+        // }
+        // "adlsStorageAccountInfo": {
+        //     "type": "object",
+        //     "value": "[reference(variables('adlsStorageAccountResourceId'), variables('storageAccountApiVersion'), 'full')]"
+        // },
+        
+
+        "storageAccountKey": {
+            "type": "string",
+            "value": "[listKeys(variables('adlsStorageAccountResourceId'), variables('storageAccountApiVersion')).keys[0].value]"
+        },
+        "storageAccountContainerSasKey": {
+            "type": "string",
+            "value": "[listAccountSas(variables('adlsStorageAccountName'), variables('storageAccountApiVersion'), parameters('adlsStorageAccountSasProperties')).accountSasToken]"
+        },
+
+
+
+        "runSettings": {
+            "type": "string",
+            "value": "[
+                concat('<?xml version=\"1.0\" encoding=\"utf-8\"?>',
+                       '<RunSettings>',
+                       '  <TestRunParameters>',
+                       '    <Parameter name=\"UseFunctionsEmulator\" value=\"false\" />',
+                       '    <Parameter name=\"FunctionsAppName\" value=\"', variables('functionsAppName'), '\" />',
+                       '    <Parameter name=\"FunctionsAppUrl\" value=\"', reference(resourceId('Microsoft.Web/sites', variables('functionsAppName')), variables('functionsAppApiVersion'), 'full').properties.hostNames[0], '\" />',
+                       '    <Parameter name=\"StorageAccountName\" value=\"', variables('adlsStorageAccountName'), '\" />',
+                       '    <Parameter name=\"StorageContainerName\" value=\"', parameters('adlsStorageAccountContainerName'), '\" />',
+                       '    <Parameter name=\"KeyVaultName\" value=\"', variables('keyVaultName'), '\" />',
+                       '    <Parameter name=\"ServicePrincipalName\" value=\"', parameters('devopsServicePrincipalCredentials').client_id, '\" />',
+                       '    <Parameter name=\"ApplicationInsightsName\" value=\"', reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), variables('applicationInsightsApiVersion'), 'full').properties.Name, '\" />',
+                       
+                       '    <Parameter name=\"KeyVaultSecretFunctionsAppKey\" value=\"', variables('keyVaultSecret_functionsKey'), '\" />',
+                       '    <Parameter name=\"KeyVaultSecretServicePrincipalSecretKey\" value=\"', variables('keyVaultSecret_ServicePrincipalClientSecret'), '\" />',
+                       '    <Parameter name=\"KeyVaultSecretStorageContainerSasToken\" value=\"', variables('keyVaultSecret_StorageSaSToken'), '\" />',
+                       '    <Parameter name=\"KeyVaultSecretStorageAccountAccessKey\" value=\"', variables('keyVaultSecret_StorageKey'), '\" />',
+                       '    <Parameter name=\"KeyVaultSecretApplicationInsightsKey\" value=\"', variables('keyVaultSecret_applicationsInsightsKey'), '\" />',
+                       '  </TestRunParameters>',
+                       '</RunSettings>'
+                      )
+                ]"
+        }
+    }
+}
+
+
+

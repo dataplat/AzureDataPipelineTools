@@ -1,4 +1,5 @@
 ﻿using System;
+using DataPipelineTools.Tests.Common;
 using Moq;
 using NUnit.Framework;
 using SqlCollaborative.Azure.DataPipelineTools.DataLake;
@@ -6,6 +7,7 @@ using SqlCollaborative.Azure.DataPipelineTools.DataLake;
 namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
 {
     [TestFixture]
+    [Category(nameof(TestType.UnitTest))]
     public class CheckPathAsyncTests: DataLakeTestBase
     {
 
@@ -160,7 +162,7 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
         public void Given_DirectoryPathWithIncorrectCase_Should_ThrowWhenMultipleDirectoriesMatch(string testPath)
         {
             var exception = Assert.CatchAsync(() => Sut.CheckPathAsync(testPath, true));
-            Assert.That(exception, Is.TypeOf(typeof(Exception)));
+            Assert.That(exception, Is.TypeOf(typeof(MultipleMatchesException)));
         }
 
         [TestCase("RaW/api/jan/delta_extract_1.json")]
@@ -172,7 +174,7 @@ namespace DataPipelineTools.Tests.DataLake.DataLakeServiceTests
         public void Given_PathWithIncorrectCase_Should_ThrowWhenMultipleFilesMatch(string testPath)
         {
             var exception = Assert.CatchAsync(() => Sut.CheckPathAsync(testPath, false));
-            Assert.That(exception, Is.TypeOf(typeof(Exception)));
+            Assert.That(exception, Is.TypeOf(typeof(MultipleMatchesException)));
         }
     }
 }

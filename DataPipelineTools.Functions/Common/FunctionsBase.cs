@@ -14,19 +14,27 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.Common
             _logger = logger;
         }
 
-        protected JObject GetTemplateResponse(DataLakeConfig dataLakeConfig, object parameters)
+        protected JObject GetTemplateResponse(IDataLakeConnectionConfig dataLakeConnectionConfig, object parameters, Microsoft.Azure.WebJobs.ExecutionContext context)
         {
             var assemblyInfo = AssemblyHelpers.GetAssemblyVersionInfoJson();
 
             var responseJson = new JObject();
+
+            responseJson.Add("invocationId", context.InvocationId);
+
             if (assemblyInfo.HasValues)
                 responseJson.Add("debugInfo", assemblyInfo);
 
-            if (dataLakeConfig.BaseUrl != null)
-                responseJson.Add("storageContainerUrl", dataLakeConfig.BaseUrl);
+            if (dataLakeConnectionConfig.BaseUrl != null)
+                responseJson.Add("storageContainerUrl", dataLakeConnectionConfig.BaseUrl);
 
-            var paramatersJson = JObject.FromObject(parameters);
-            responseJson.Add("parameters", paramatersJson);
+            if (dataLakeConnectionConfig is DataLakeUserServicePrincipalConnectionConfig config)
+                responseJson.Add("clientId", config.ServicePrincipalClientId);
+
+            responseJson.Add("authType", dataLakeConnectionConfig.AuthType.ToString());
+
+            var parametersJson = JObject.FromObject(parameters);
+            responseJson.Add("parameters", parametersJson);
 
             return responseJson;
         }

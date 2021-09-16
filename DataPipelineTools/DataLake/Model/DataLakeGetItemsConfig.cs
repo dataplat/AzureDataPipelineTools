@@ -5,7 +5,7 @@ namespace SqlCollaborative.Azure.DataPipelineTools.DataLake.Model
 {
     public class DataLakeGetItemsConfig
     {
-        public string Directory { get; set; }
+        public string Path { get; set; }
         public bool IgnoreDirectoryCase { get; set; } = true;
         public bool Recursive { get; set; } = true;
         public string OrderByColumn { get; set; }

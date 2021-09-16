@@ -6,11 +6,11 @@ using System.Threading;
 using Azure;
 using Azure.Storage.Files.DataLake;
 using Azure.Storage.Files.DataLake.Models;
-using Microsoft.Extensions.Logging;
+using DataPipelineTools.Tests.Common;
 using Moq;
 using SqlCollaborative.Azure.DataPipelineTools.DataLake;
 
-namespace DataPipelineTools.Tests.DataLake
+namespace DataPipelineTools.Tests.DataLake 
 {
     /// <summary>
     /// Base class for tests that need to mock the DataLakeFileSystemClient classes
@@ -23,7 +23,6 @@ namespace DataPipelineTools.Tests.DataLake
         protected readonly IEnumerable<PathItem> TestData;
 
         protected readonly Mock<DataLakeFileSystemClient> MockFileSystemClient;
-
 
         public DataLakeTestBase()
         {
@@ -136,7 +135,7 @@ namespace DataPipelineTools.Tests.DataLake
             if (string.IsNullOrWhiteSpace(path))
                 return new string[0];
 
-            // Directory separators are changed when using Path.GetDirectoryName(...)
+            // Path separators are changed when using Path.GetDirectoryName(...)
             var parent = Path.GetDirectoryName(path).Replace('\\', '/');
             var grandParents = ExpandAllParentPaths(parent);
 

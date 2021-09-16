@@ -1,10 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SqlCollaborative.Azure.DataPipelineTools.Common;
 using SqlCollaborative.Azure.DataPipelineTools.DataLake.Model;
 
@@ -12,15 +15,16 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
 {
     public class DataLakeConfigFactory
     {
-        private const string AccountUriParam = "accountUri";
-        private const string ContainerParam = "container";
-        private const string PathParam = "path";
-        private const string DirectoryParam = "directory";
-        private const string IgnoreDirectoryCaseParam = "ignoreDirectoryCase";
-        private const string RecursiveParam = "recursive";
-        private const string OrderByColumnParam = "orderBy";
-        private const string OrderByDescendingParam = "orderByDesc";
-        private const string LimitParam = "limit";
+        
+
+        // Query config
+        public const string PathParam = "path";
+        public const string IgnoreDirectoryCaseParam = "ignoreDirectoryCase";
+        public const string RecursiveParam = "recursive";
+        public const string OrderByColumnParam = "orderBy";
+        public const string OrderByDescendingParam = "orderByDesc";
+        public const string LimitParam = "limit";
+        public const string FilterParam = "filter";
 
         private readonly ILogger _logger;
         public DataLakeConfigFactory(ILogger<DataLakeConfigFactory> logger)
@@ -28,24 +32,166 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             _logger = logger;
         }
 
-        public DataLakeConfig GetDataLakeConfig (HttpRequest req)
+
+
+        #region Data lake connection config
+        // Data lake connection config
+        public const string AccountParam = "account";
+        public const string ContainerParam = "container";
+        public const string ServicePrincipalClientIdParam = "spnClientId";
+        public const string ServicePrincipalClientSecretParam = "spnClientSecret";
+        public const string SasTokenParam = "sasToken";
+        public const string AccountKeyParam = "accountKey";
+        public const string KeyVaultParam = "keyVault";
+
+        public IDataLakeConnectionConfig GetDataLakeConnectionConfig(HttpRequest req)
         {
-            var config = new DataLakeConfig();
-            //_logger.LogInformation($"req.GetQueryParameterDictionary(): {JsonConvert.SerializeObject(req.GetQueryParameterDictionary(), Formatting.Indented)}");
-
-            var data = GetRequestData(req);
-            config.AccountUri = req.Query[AccountUriParam] != StringValues.Empty ? (string)req.Query[AccountUriParam] : data?.accountUri;
-            config.Container = req.Query[ContainerParam] != StringValues.Empty ? (string)req.Query[ContainerParam] : data?.container;
-
-            return config;
+            var parameters = GetParameters(req);
+            ValidateParameters(parameters);
+            return GetConfig(parameters);
         }
+
+
+        private static Dictionary<string, QueryParameter> GetParameters(HttpRequest req)
+        {
+            return new Dictionary<string, QueryParameter>
+            {
+                { AccountParam, req.GetQueryParameter(AccountParam) },
+                { ContainerParam, req.GetQueryParameter(ContainerParam) },
+                { ServicePrincipalClientIdParam, req.GetQueryParameter(ServicePrincipalClientIdParam) },
+                { ServicePrincipalClientSecretParam, req.GetQueryParameter(ServicePrincipalClientSecretParam)},
+                { SasTokenParam, req.GetQueryParameter(SasTokenParam)},
+                { AccountKeyParam, req.GetQueryParameter(AccountKeyParam)},
+                { KeyVaultParam, req.GetQueryParameter(KeyVaultParam)}
+            };
+
+
+            //return req.Query.Keys.ToDictionary(k => k, req.GetQueryParameter);
+        }
+
+        internal struct ErrorMessage
+        {
+            internal const string OneMandatoryParamMissing = "Mandatory parameter '{0}' was not provided.";
+            internal const string ParamMustHaveValue = "The parameter '{0}' must have a value if it is provided.";
+
+            internal static string AccountParamIsMandatory = string.Format(OneMandatoryParamMissing, AccountParam);
+            internal static string ContainerParamIsMandatory = string.Format(OneMandatoryParamMissing, ContainerParam);
+            internal static string UserDefinedServicePrincipalParamsMissing =
+                $"To use a user defined service principal you must supply valid values for the the parameters '{ServicePrincipalClientIdParam}' and '{ServicePrincipalClientSecretParam}'";
+
+            internal static string SasTokenParamMustHaveValue = string.Format(ErrorMessage.ParamMustHaveValue, SasTokenParam);
+            internal static string AccountKeyParamMustHaveValue = string.Format(ErrorMessage.ParamMustHaveValue, AccountKeyParam);
+
+            internal static string MultipleAuthTypesUsed =
+                "Authentication parameters are invalid. Authentication params must be one of the following sets\n"
+                + "  - None (for authentication using the Azure Functions Service Principal)\n"
+                + $"  - {ServicePrincipalClientIdParam}, {ServicePrincipalClientSecretParam}\n"
+                + $"  - {SasTokenParam}\n"
+                + $"  - {AccountKeyParam}\n";
+        }
+
+        private void ValidateParameters(IReadOnlyDictionary<string, QueryParameter> parameters)
+        {
+            if (!parameters[AccountParam].Exists || parameters[AccountParam].IsNullOrWhiteSpace)
+                throw new ArgumentException(ErrorMessage.AccountParamIsMandatory);
+
+            if (!parameters[ContainerParam].Exists || parameters[ContainerParam].IsNullOrWhiteSpace)
+                throw new ArgumentException(ErrorMessage.ContainerParamIsMandatory);
+
+            // We either need both params for a user defined service principal, or none
+            var userServicePrincipalParams = new[] {parameters[ServicePrincipalClientIdParam], parameters[ServicePrincipalClientSecretParam]};
+            if (userServicePrincipalParams.Count(x => x.Exists) == 1 || userServicePrincipalParams.Count(x => x.Exists && x.IsNullOrWhiteSpace) > 0)
+                throw new ArgumentException(ErrorMessage.UserDefinedServicePrincipalParamsMissing);
+
+            // We need zero or one auth types (if nothing is specified we use the functions app service principal)
+            var secrets = new[] {parameters[ServicePrincipalClientSecretParam], parameters[SasTokenParam], parameters[AccountKeyParam]};
+            if (secrets.Count(x => x.Exists) > 1)
+                throw new ArgumentException(ErrorMessage.MultipleAuthTypesUsed);
+
+            // Check any sas token or account key that was passed is not null, empty or whitespace
+            if (parameters[SasTokenParam].Exists && parameters[SasTokenParam].IsNullOrWhiteSpace)
+                throw new ArgumentException( ErrorMessage.SasTokenParamMustHaveValue);
+            if (parameters[AccountKeyParam].Exists && parameters[AccountKeyParam].IsNullOrWhiteSpace)
+                throw new ArgumentException( ErrorMessage.AccountKeyParamMustHaveValue);
+
+
+            // If secrets are specified without a ref to a Key Vault, log a warning
+            if (secrets.Count(x => x.Exists) != 0 && !parameters[KeyVaultParam].Exists)
+                _logger.LogWarning($"The authentication parameters are supplied, but a Azure Key Vault name is not. It is best practice to use Key Vault for storing secret values.");
+        }
+
+        private AuthType GetAuthType(IReadOnlyDictionary<string, QueryParameter> parameters)
+        {
+            if (parameters[ServicePrincipalClientIdParam].Exists)
+                return AuthType.UserServicePrincipal;
+
+            if ((parameters[SasTokenParam].Exists))
+                return AuthType.SasToken;
+
+            if (parameters[AccountKeyParam].Exists)
+                return AuthType.AccountKey;
+
+            return AuthType.FunctionsServicePrincipal;
+        }
+
+        private IDataLakeConnectionConfig GetConfig(IReadOnlyDictionary<string, QueryParameter> parameters)
+        {
+            var authType = GetAuthType(parameters);
+            switch (authType)
+            {
+                case AuthType.FunctionsServicePrincipal:
+                    return new DataLakeFunctionsServicePrincipalConnectionConfig
+                    {
+                        Account = parameters[AccountParam].Value,
+                        Container = parameters[ContainerParam].Value
+                    };
+
+                case AuthType.UserServicePrincipal:
+                    return new DataLakeUserServicePrincipalConnectionConfig()
+                    {
+                        Account = parameters[AccountParam].Value,
+                        Container = parameters[ContainerParam].Value,
+                        KeyVault = parameters[KeyVaultParam].Value,
+                        ServicePrincipalClientId = parameters[ServicePrincipalClientIdParam].Value,
+                        ServicePrincipalClientSecret = parameters[ServicePrincipalClientSecretParam].Value
+
+                    };
+
+                case AuthType.SasToken:
+                    return new DataLakeSasTokenConnectionConfig()
+                    {
+                        Account = parameters[AccountParam].Value,
+                        Container = parameters[ContainerParam].Value,
+                        KeyVault = parameters[KeyVaultParam].Value,
+                        SasToken = parameters[SasTokenParam].Value
+                    };
+
+                case AuthType.AccountKey:
+                    return new DataLakeAccountKeyConnectionConfig()
+                    {
+                        Account = parameters[AccountParam].Value,
+                        Container = parameters[ContainerParam].Value,
+                        KeyVault = parameters[KeyVaultParam].Value,
+                        AccountKey = parameters[AccountKeyParam].Value
+                    };
+
+                // Should never get here...
+                default:
+                    throw new NotImplementedException("Unknown authentication type");
+            }
+        }
+        #endregion Data lake connection config
+
+
+
+
 
         public DataLakeCheckPathCaseConfig GetCheckPathCaseConfig (HttpRequest req)
         {
             var config = new DataLakeCheckPathCaseConfig();
 
-            var data = GetRequestData(req);
-            config.Path = req.Query[PathParam] != StringValues.Empty ? (string)req.Query[PathParam] : data?.directory;
+            var data = req.GetData();
+            config.Path = req.GetQueryParameter(PathParam).Value;
 
             return config;
         }
@@ -53,19 +199,16 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
         public DataLakeGetItemsConfig GetItemsConfig (HttpRequest req)
         {
             var config = new DataLakeGetItemsConfig();
+            var data = req.GetData();
 
-            var data = GetRequestData(req);
+            bool.TryParse(req.GetQueryParameter(RecursiveParam).Value, out bool recursive);
+            bool.TryParse(req.GetQueryParameter(OrderByDescendingParam).Value, out bool orderByDesc);
+            bool.TryParse(req.GetQueryParameter(IgnoreDirectoryCaseParam).Value, out bool ignoreDirectoryCase);
+            int.TryParse(req.GetQueryParameter(LimitParam).Value, out int limit);
 
-            bool recursive;
-            bool orderByDesc;
-            bool ignoreDirectoryCase = true;
-            int limit = 0;
-            bool.TryParse(req.Query[RecursiveParam] != StringValues.Empty ? (string)req.Query[RecursiveParam] : data?.recursive, out recursive);
-            bool.TryParse(req.Query[OrderByDescendingParam] != StringValues.Empty ? (string)req.Query[OrderByDescendingParam] : data?.orderByDesc, out orderByDesc);
-            bool.TryParse(req.Query[IgnoreDirectoryCaseParam] != StringValues.Empty ? (string)req.Query[IgnoreDirectoryCaseParam] : data?.ignoreDirectoryCase, out ignoreDirectoryCase);
-            int.TryParse(req.Query[LimitParam] != StringValues.Empty ? (string)req.Query[LimitParam] : data?.orderByDesc, out limit);
+            string path = req.Query[PathParam] != StringValues.Empty || data?.directory  == null ? (string)req.Query[PathParam] : data?.path;
+            config.Path = string.IsNullOrWhiteSpace(path?.TrimStart('/')) ? "/" : path?.TrimStart('/');
 
-            config.Directory = req.Query[DirectoryParam] != StringValues.Empty ? (string)req.Query[DirectoryParam] : data?.directory;
             config.IgnoreDirectoryCase = ignoreDirectoryCase;
             config.Recursive = recursive;
             config.OrderByColumn = req.Query[OrderByColumnParam] != StringValues.Empty ? (string)req.Query[OrderByColumnParam] : data?.orderBy;
@@ -73,27 +216,75 @@ namespace SqlCollaborative.Azure.DataPipelineTools.Functions.DataLake
             config.Limit = limit;
 
             config.Filters = ParseFilters(req);
-            
+
             return config;
         }
+
+        
 
         private IEnumerable<Filter<DataLakeItem>> ParseFilters(HttpRequest req)
         {
             var filters = req.Query.Keys
-                            .Where(k => k.StartsWith("filter[") && k.EndsWith("]"))
+                            .Where(k => k.StartsWith($"{FilterParam}[") && k.EndsWith("]"))
                             // Clean up the column name by removing the filter[...] parts
-                            //.Select(f => f[7..^1])
                             .SelectMany(k => req.Query[k].Select(v => FilterFactory<DataLakeItem>.Create(k[7..^1], v, _logger)))
                             .Where(f => f != null);
 
             return filters.ToArray();
         }
 
-        private dynamic GetRequestData(HttpRequest req)
+        
+    }
+
+    public static class HttpRequestExtensions
+    {
+        public static QueryParameter GetQueryParameter(this HttpRequest req, string parameterName)
+        {
+            var data = GetRequestDataDictionary(req);
+
+            return new QueryParameter
+            {
+                Name = parameterName,
+                Exists = req.Query.TryGetValue(parameterName, out StringValues values),
+                Value = values.Count > 0 ? values.ToString()?.Trim() : null
+            };
+
+            //return (string) req.Query[parameterName] ??
+            //       data?[parameterName]?.ToString().Trim();
+        }
+
+
+        public static dynamic GetData(this HttpRequest req)
         {
             var task = new StreamReader(req.Body).ReadToEndAsync();
-            //task.Wait(250);
             return JsonConvert.DeserializeObject(task.Result);
         }
+
+        private static Dictionary<string, object> GetRequestDataDictionary(HttpRequest req)
+        {
+            var task = new StreamReader(req.Body).ReadToEndAsync();
+
+
+            // The body won't be populated unless it's a post, so this most likely fails trying to parse an invalid string. In that case just return null.
+            try
+            {
+                return JObject.Parse(task.Result).ToObject<Dictionary<string, object>>();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
+
+    public struct QueryParameter
+    {
+        public string Name { get; set; }
+        public string Value { get; set; }
+        public bool Exists { get; set; }
+        public bool IsNullOrEmpty => string.IsNullOrEmpty(Value);
+        public bool IsNullOrWhiteSpace => string.IsNullOrWhiteSpace(Value);
+
     }
 }
